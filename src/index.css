@@ -455,7 +455,6 @@ button {
 }
 /* A soft sheen that slides across a button when it is hovered */
 .sheen {
-  position: relative;
   overflow: hidden;
 }
 .sheen::after {
