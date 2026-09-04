@@ -3,58 +3,63 @@ import type { HotspotId } from "../content/egginaya";
 
 const KEY = "egginaya.visited.v1";
 
+/** Which places in the room have been seen. Remembered in the browser. */
 export function useVisited() {
   const [visited, setVisited] = useState<HotspotId[]>(() => {
     try {
       const raw = localStorage.getItem(KEY);
-      return raw ? (JSON.parse(raw) as HotspotId[]) : [];
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? (parsed as HotspotId[]) : [];
     } catch {
       return [];
     }
   });
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(visited));
+    } catch {
+      /* private mode etc. */
+    }
+  }, [visited]);
+
   const mark = useCallback((id: HotspotId) => {
-    setVisited((prev) => {
-      if (prev.includes(id)) return prev;
-      const next = [...prev, id];
-      try {
-        localStorage.setItem(KEY, JSON.stringify(next));
-      } catch {
-        /* private mode etc. */
-      }
-      return next;
-    });
+    setVisited((v) => (v.includes(id) ? v : [...v, id]));
   }, []);
 
-  return { visited, mark };
+  const reset = useCallback(() => setVisited([]), []);
+
+  return { visited, mark, reset };
 }
 
+/** Coarse pointer = touch device. */
 export function useIsTouch() {
-  const [touch, setTouch] = useState(false);
+  const [touch, setTouch] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia("(pointer: coarse)").matches : false
+  );
   useEffect(() => {
     const mq = window.matchMedia("(pointer: coarse)");
-    const update = () => setTouch(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
+    const on = () => setTouch(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
   }, []);
   return touch;
 }
 
+/** Viewport size, updated on resize. */
 export function useViewport() {
-  const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+  const [size, setSize] = useState(() => ({
+    w: typeof window !== "undefined" ? window.innerWidth : 1280,
+    h: typeof window !== "undefined" ? window.innerHeight : 800,
+  }));
   useEffect(() => {
-    let raf = 0;
-    const onResize = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => setSize({ w: window.innerWidth, h: window.innerHeight }));
-    };
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", onResize);
+    const on = () => setSize({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener("resize", on);
+    window.visualViewport?.addEventListener("resize", on);
     return () => {
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("orientationchange", onResize);
-      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", on);
+      window.visualViewport?.removeEventListener("resize", on);
     };
   }, []);
   return size;

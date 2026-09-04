@@ -1,8 +1,9 @@
+import { useMemo } from "react";
 import { motion } from "motion/react";
 import { skyImg } from "../lib/assets";
 import { facts, september } from "../content/egginaya";
 import { cine, useEscape } from "../lib/hooks";
-import { BackToRoom, Placeholder } from "./ui";
+import { BackToRoom, Kicker } from "./ui";
 
 /** Through the window. The room falls away and it is just the night and one date. */
 export function WindowNight({ onBack }: { onBack: () => void }) {
@@ -14,53 +15,78 @@ export function WindowNight({ onBack }: { onBack: () => void }) {
     transition: { duration: 1.4, delay, ease: cine },
   });
 
+  const stars = useMemo(
+    () =>
+      Array.from({ length: 70 }, (_, i) => ({
+        id: i,
+        x: Math.random() * 100,
+        y: Math.random() * 70,
+        s: 1 + Math.random() * 1.6,
+        d: 3 + Math.random() * 4,
+        delay: Math.random() * 5,
+      })),
+    []
+  );
+
   return (
     <motion.div
-      className="absolute inset-0 z-40 overflow-hidden"
+      className="absolute inset-0 z-40 overflow-hidden bg-night"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0, transition: { duration: 0.8 } }}
-      transition={{ duration: 1.2, delay: 0.4, ease: cine }}
+      exit={{ opacity: 0, transition: { duration: 0.6 } }}
+      transition={{ duration: 1, ease: cine }}
     >
+      <BackToRoom onClick={onBack} />
+
       <motion.img
         src={skyImg}
         alt=""
-        aria-hidden="true"
-        initial={{ scale: 1.1 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 6, ease: "easeOut" }}
+        initial={{ scale: 1.12, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 3, ease: cine }}
         className="absolute inset-0 h-full w-full object-cover"
+        draggable={false}
       />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,11,28,0.25),rgba(6,11,28,0.75))]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,11,28,0.15),rgba(6,11,28,0.55)_60%,rgba(6,11,28,0.9))]" />
+      {stars.map((s) => (
+        <span
+          key={s.id}
+          className="star"
+          style={{
+            left: `${s.x}%`,
+            top: `${s.y}%`,
+            width: s.s,
+            height: s.s,
+            ["--dur" as string]: `${s.d}s`,
+            ["--delay" as string]: `${s.delay}s`,
+          }}
+        />
+      ))}
       <div className="grain" />
 
-      <BackToRoom onClick={onBack} />
+      <div className="scroll-area absolute inset-0 flex flex-col items-center justify-center px-6 pb-12 pt-24 text-center">
+        <motion.div {...fade(0.4)}>
+          <Kicker>{facts.togetherDate.month}</Kicker>
+        </motion.div>
+        <motion.div {...fade(0.7)} className="mt-1 font-display text-[132px] leading-[0.9] text-ivory md:text-[200px]">
+          {facts.togetherDate.day}
+        </motion.div>
+        <motion.div {...fade(1.0)} className="mt-3 font-mono text-[12px] tracking-[0.4em] text-ice/70">
+          {facts.togetherDate.year}
+        </motion.div>
 
-      <div className="scroll-area absolute inset-0">
-        <div className="mx-auto flex min-h-full max-w-[680px] flex-col items-center justify-center px-7 py-24 text-center">
-          <motion.p {...fade(0.8)} className="font-mono text-[11px] uppercase tracking-[0.35em] text-ice/55">
-            {facts.togetherDate.month}
-          </motion.p>
-          <motion.p {...fade(1.1)} className="mt-3 font-display text-[120px] leading-none text-ivory md:text-[168px]">
-            {facts.togetherDate.day}
-          </motion.p>
-          <motion.p {...fade(1.4)} className="mt-1 font-display text-[22px] italic text-ivory/60">
-            <Placeholder>{facts.togetherDate.year}</Placeholder>
-          </motion.p>
-
-          <motion.p {...fade(2)} className="text-balance mt-12 max-w-[520px] font-display text-[26px] leading-[1.25] text-ivory md:text-[32px]">
-            {september.lead}
-          </motion.p>
-          <motion.p {...fade(2.5)} className="text-balance mt-5 font-display text-[19px] italic leading-snug text-ivory/70 md:text-[21px]">
-            {september.after}
-          </motion.p>
-          <motion.p {...fade(3)} className="mt-8 font-display text-[18px] leading-snug text-ivory/80">
-            <Placeholder>{september.placeholder}</Placeholder>
-          </motion.p>
-          <motion.p {...fade(3.6)} className="mt-14 font-mono text-[11px] tracking-[0.14em] text-ice/40">
-            {september.small}
-          </motion.p>
-        </div>
+        <motion.p {...fade(1.6)} className="mt-10 max-w-[560px] text-balance font-display text-[22px] italic leading-[1.35] text-ivory/90 md:text-[27px]">
+          {september.lead}
+        </motion.p>
+        <motion.p {...fade(2.1)} className="mt-4 max-w-[520px] text-balance text-[14px] leading-[1.7] text-ivory/65 md:text-[15px]">
+          {september.after}
+        </motion.p>
+        <motion.p {...fade(2.6)} className="mt-6 max-w-[520px] text-balance text-[15px] leading-[1.7] text-ivory/80 md:text-[16px]">
+          {september.line}
+        </motion.p>
+        <motion.p {...fade(3.2)} className="mt-10 font-mono text-[10px] uppercase tracking-[0.3em] text-ice/40">
+          {september.small}
+        </motion.p>
       </div>
     </motion.div>
   );

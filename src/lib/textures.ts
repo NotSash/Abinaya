@@ -11,11 +11,11 @@ const svg = (body: string, size: number) =>
 
 export const textures = {
   grain: svg(
-    `<filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#g)"/>`,
+    `<filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#n)"/>`,
     160
   ),
   paper: svg(
-    `<filter id="p"><feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 0.12"/></feComponentTransfer></filter><rect width="100%" height="100%" filter="url(#p)"/>`,
+    `<filter id="p"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope="0.08"/></feComponentTransfer></filter><rect width="100%" height="100%" filter="url(#p)"/>`,
     200
   ),
 };

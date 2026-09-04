@@ -1,127 +1,114 @@
-import { AnimatePresence, motion } from "motion/react";
-import type { ReactNode } from "react";
-import { cn } from "../utils/cn";
-import { cine } from "../lib/hooks";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { motion } from "motion/react";
 import { copy } from "../content/egginaya";
+import { cine } from "../lib/hooks";
+import { cn } from "../utils/cn";
 
-/** Quiet return control. Sits in the same place in every scene so the visitor never hunts for it. */
-export function BackToRoom({
-  onClick,
-  label = copy.back,
-  tone = "light",
-}: {
-  onClick: () => void;
-  label?: string;
-  tone?: "light" | "dark";
-}) {
-  return (
-    <motion.button
-      type="button"
-      onClick={onClick}
-      initial={{ opacity: 0, x: -6 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.9, delay: 0.6, ease: cine }}
-      className={cn(
-        "absolute left-[max(1rem,env(safe-area-inset-left))] top-[max(1rem,env(safe-area-inset-top))] z-50 flex min-h-11 items-center gap-3 pr-3 text-[14px] tracking-wide transition-colors",
-        tone === "light" ? "text-ivory/70 hover:text-ivory" : "text-navy/70 hover:text-navy"
-      )}
-    >
-      <svg width="10" height="14" viewBox="0 0 10 14" fill="none" aria-hidden="true" className="ml-1">
-        <path d="M8 1 2 7l6 6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      <span>{label}</span>
-    </motion.button>
-  );
-}
-
-/** A soft text button: thin rule, serif, no pill. */
+/** A small, low-key button. */
 export function QuietButton({
-  children,
-  onClick,
   className,
-  autoFocus,
-}: {
-  children: ReactNode;
-  onClick: () => void;
-  className?: string;
-  autoFocus?: boolean;
-}) {
+  children,
+  ...rest
+}: ButtonHTMLAttributes<HTMLButtonElement> & { children: ReactNode }) {
   return (
     <button
-      type="button"
-      onClick={onClick}
-      autoFocus={autoFocus}
+      {...rest}
       className={cn(
-        "underline-soft inline-flex min-h-11 items-center font-display text-[20px] italic text-ivory/85 transition-colors hover:text-ivory md:text-[22px]",
+        "group relative inline-flex min-h-11 items-center gap-3 rounded-full border border-ice/25 bg-night/40 px-6 font-mono text-[12px] uppercase tracking-[0.22em] text-ivory/85 backdrop-blur-sm transition-all duration-500",
+        "hover:border-ice/60 hover:bg-blue/15 hover:text-ivory focus-visible:border-ice focus-visible:outline-none",
         className
       )}
     >
+      <span className="h-1 w-1 rounded-full bg-ivory/70 transition-all duration-500 group-hover:w-4 group-hover:bg-ice" />
       {children}
     </button>
   );
 }
 
-/** Editable placeholder treatment: visible, honest, still designed. */
-export function Placeholder({
-  children,
-  className,
-  tone = "light",
-}: {
-  children: ReactNode;
-  className?: string;
-  tone?: "light" | "dark";
-}) {
-  const isPlaceholder = typeof children === "string" && children.trim().startsWith("[");
-  if (!isPlaceholder) return <span className={className}>{children}</span>;
+/** "back to the room" – sits in the top-left of every scene. */
+export function BackToRoom({ onClick, tone = "dark" }: { onClick: () => void; tone?: "dark" | "light" }) {
   return (
-    <span
+    <motion.button
+      type="button"
+      onClick={onClick}
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 1, delay: 0.5, ease: cine }}
       className={cn(
-        "rounded-[2px] px-1.5 py-0.5 font-sans text-[0.72em] not-italic tracking-normal",
-        tone === "light" ? "bg-ice/10 text-ice/70" : "bg-navy/8 text-navy/60",
-        className
+        "group fixed left-4 top-4 z-50 inline-flex min-h-11 items-center gap-2.5 rounded-full px-4 font-mono text-[11px] uppercase tracking-[0.2em] transition-colors md:left-6 md:top-6",
+        tone === "dark"
+          ? "bg-night/50 text-ivory/70 backdrop-blur-md hover:text-ivory"
+          : "bg-white/70 text-night/70 backdrop-blur-md hover:text-night"
       )}
     >
-      {children}
-    </span>
+      <span className="inline-block transition-transform duration-500 group-hover:-translate-x-1">←</span>
+      {copy.back}
+    </motion.button>
   );
 }
 
-/** Small corner note, serif italic. Used sparingly for wayfinding. */
-export function CornerNote({ children, className }: { children: ReactNode; className?: string }) {
-  return <p className={cn("font-display text-[15px] italic text-ivory/60", className)}>{children}</p>;
+/** A thread that drops down to say "there is more below". */
+export function ScrollCue({ show, className, tone = "dark" }: { show: boolean; className?: string; tone?: "dark" | "light" }) {
+  return (
+    <motion.div
+      aria-hidden
+      initial={false}
+      animate={{ opacity: show ? 1 : 0 }}
+      transition={{ duration: 0.8 }}
+      className={cn(
+        "pointer-events-none flex flex-col items-center gap-2 font-mono text-[10px] uppercase tracking-[0.3em]",
+        tone === "dark" ? "text-ivory/60" : "text-night/50",
+        className
+      )}
+    >
+      <span>{copy.scrollCue}</span>
+      <span className="cue-line" />
+      <span className="cue-dot" />
+    </motion.div>
+  );
 }
 
-/**
- * A bright, unmissable "there's more below" cue.
- * Sits at the bottom centre and disappears once the visitor has scrolled.
- */
-export function ScrollCue({ show, label = copy.scrollCue, tone = "light" }: { show: boolean; label?: string; tone?: "light" | "dark" }) {
+/** Reveals bracketed text as a soft highlight so nothing is missed. */
+export function Placeholder({ text, className }: { text: string; className?: string }) {
+  const isPlaceholder = /^\[.*\]$/.test(text.trim());
+  if (!isPlaceholder) return <span className={className}>{text}</span>;
+  return <span className={cn("placeholder", className)}>{text}</span>;
+}
+
+/** Little section label used across scenes. */
+export function Kicker({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          key="cue"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 6, transition: { duration: 0.5 } }}
-          transition={{ duration: 1, delay: 1.2, ease: cine }}
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-50 flex flex-col items-center gap-2"
-        >
-          <span
-            className={cn(
-              "font-mono text-[10px] uppercase tracking-[0.3em]",
-              tone === "light" ? "text-ice/85" : "text-navy/70"
-            )}
-            style={{ textShadow: "0 0 14px rgba(217,230,255,0.5)" }}
-          >
-            {label}
-          </span>
-          <span className="cue-line" />
-          <span className="cue-dot" />
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <div className={cn("font-mono text-[10px] uppercase tracking-[0.32em] text-ice/55", className)}>{children}</div>
+  );
+}
+
+/** A framed slot for an image that may not have been dropped in yet. */
+export function Evidence({
+  src,
+  alt,
+  caption,
+  missing,
+  className,
+}: {
+  src?: string;
+  alt: string;
+  caption: string;
+  missing: string;
+  className?: string;
+}) {
+  return (
+    <figure className={cn("mt-4", className)}>
+      <div className="relative overflow-hidden rounded-[6px] border border-ice/15 bg-deep/60 p-2">
+        {src ? (
+          <img src={src} alt={alt} className="mx-auto block max-h-[520px] w-auto max-w-full rounded-[3px] object-contain" loading="lazy" />
+        ) : (
+          <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-[3px] border border-dashed border-ice/20 px-6 text-center">
+            <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-ice/40">evidence pending</span>
+            <span className="font-mono text-[11px] text-ice/35">{missing}</span>
+          </div>
+        )}
+      </div>
+      <figcaption className="mt-2 font-mono text-[11px] text-ice/50">{caption}</figcaption>
+    </figure>
   );
 }

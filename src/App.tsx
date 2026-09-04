@@ -54,7 +54,14 @@ export default function App() {
         {open === "window" && <WindowNight key="window" onBack={back} />}
         {open === "lunch" && <LunchBox key="lunch" onBack={back} />}
         {open === "envelope" && (
-          <motion.div key="envelope" className="absolute inset-0 z-40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.8 } }} transition={{ duration: 1, ease: cine }}>
+          <motion.div
+            key="envelope"
+            className="absolute inset-0 z-40"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.8 } }}
+            transition={{ duration: 1, ease: cine }}
+          >
             <Letter unlocked={envelopeUnlocked} visited={visited} onBack={back} />
           </motion.div>
         )}
@@ -63,7 +70,11 @@ export default function App() {
       {/* Arrival */}
       <AnimatePresence>
         {scene === "arrival" && (
-          <motion.div key="arrival" className="absolute inset-0 z-30 flex items-center justify-center bg-night px-8" exit={{ opacity: 0, transition: { duration: 1.4, ease: cine } }}>
+          <motion.div
+            key="arrival"
+            className="absolute inset-0 z-30 flex items-center justify-center bg-night px-8"
+            exit={{ opacity: 0, transition: { duration: 1.4, ease: cine } }}
+          >
             <div className="pointer-events-none absolute inset-0 [background:radial-gradient(50%_40%_at_50%_60%,rgba(31,60,138,0.35),transparent_70%)]" />
             <div className="grain" />
             <div className="relative max-w-[560px] text-center">
@@ -83,7 +94,12 @@ export default function App() {
               >
                 {copy.arrival.sub}
               </motion.p>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reduce ? 0 : 1.2, delay: 2.8, ease: cine }} className="mt-12">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: reduce ? 0 : 1.2, delay: 2.8, ease: cine }}
+                className="mt-12"
+              >
                 <QuietButton onClick={() => setScene("world")} autoFocus>
                   {copy.arrival.button}
                 </QuietButton>
