@@ -1,5 +1,4 @@
 @import "tailwindcss";
-
 @theme {
   --color-night: #060b1c;
   --color-deep: #0a1330;
@@ -8,16 +7,13 @@
   --color-ivory: #f3ecdd;
   --color-gold: #e8c98a;
   --color-cream: #f7f1e3;
-
   --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
-
   --ease-cine: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
 }
-
 html,
 body,
 #root {
@@ -31,11 +27,9 @@ body,
   font-family: var(--font-sans);
   overscroll-behavior: none;
 }
-
 body {
   overflow: hidden;
 }
-
 button {
   font: inherit;
   color: inherit;
@@ -45,12 +39,10 @@ button {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-
 ::selection {
   background: rgba(47, 107, 255, 0.35);
   color: #f3ecdd;
 }
-
 /* Film grain overlay */
 .grain {
   position: absolute;
@@ -62,7 +54,6 @@ button {
   mix-blend-mode: overlay;
   z-index: 5;
 }
-
 /* Paper texture for the letter and notes */
 .paper {
   background-color: #f6efe0;
@@ -70,7 +61,6 @@ button {
   background-size: 200px 200px;
   color: #1a1a1a;
 }
-
 /* A slightly warmer paper for the polaroid frames on the pinboard */
 .polaroid {
   background-color: #fbf7ee;
@@ -82,7 +72,6 @@ button {
     200px 200px;
   color: #1a1a1a;
 }
-
 /* Sticky note on the pinboard */
 .sticky-note {
   background-color: #fff3b8;
@@ -106,7 +95,6 @@ button {
   background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.1) 50%, rgba(255, 244, 200, 0.95) 52%);
   border-top-left-radius: 2px;
 }
-
 /* Pushpin */
 .pushpin {
   position: absolute;
@@ -140,12 +128,10 @@ button {
 .pushpin-gold {
   background: radial-gradient(circle at 35% 30%, #fff0c2 0%, #e8c98a 45%, #9a7a3a 100%);
 }
-
 /* Handwritten captions */
 .hand {
   font-family: var(--font-hand);
 }
-
 /* Scroll areas inside scenes */
 .scroll-area {
   overflow-y: auto;
@@ -162,11 +148,10 @@ button {
   background: rgba(217, 230, 255, 0.18);
   border-radius: 999px;
 }
-
 /* ------------------------------------------------------------------ */
 /* Hotspot marks in the room                                           */
 /*  unseen : a small, bright white dot that breathes, with a slow      */
-/*           ripple leaving it every 2.4s                              */
+/*           ripple leaving it every 2.1s                              */
 /*  seen   : the same dot turned bright light blue, still fully visible*/
 /* ------------------------------------------------------------------ */
 @keyframes mark-ring {
@@ -223,15 +208,15 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.85);
   box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
   transform: translate(-50%, -50%);
-  animation: mark-ring 2.4s var(--ease-cine) infinite;
+  animation: mark-ring 2.1s var(--ease-cine) infinite;
 }
 .mark-seen .mark-dot {
-  background: #7fc2ff;
+  background: #a6dbff;
   animation: none;
   box-shadow:
     0 0 0 1px rgba(6, 11, 28, 0.5),
-    0 0 18px rgba(127, 194, 255, 0.95),
-    0 0 5px rgba(190, 226, 255, 1);
+    0 0 22px rgba(146, 208, 255, 1),
+    0 0 6px rgba(214, 238, 255, 1);
 }
 .mark-seen .mark-ring {
   display: none;
@@ -272,7 +257,6 @@ button {
     0 1px 2px rgba(6, 11, 28, 0.95),
     0 0 16px rgba(6, 11, 28, 0.9);
 }
-
 /* Lamp glow */
 @keyframes lamp {
   0%,
@@ -286,7 +270,6 @@ button {
 .lamp-glow {
   animation: lamp 6s var(--ease-inout) infinite;
 }
-
 /* Slow drifting haze */
 @keyframes haze {
   0% {
@@ -299,7 +282,6 @@ button {
 .haze {
   animation: haze 18s var(--ease-inout) infinite alternate;
 }
-
 /* Scroll cue: a bright little thread that drops down, tucked into the bottom-right corner. */
 @keyframes cue-drop {
   0% {
@@ -358,18 +340,15 @@ button {
   background: rgba(6, 11, 28, 0.8);
   box-shadow: none;
 }
-
 /* The egg's speech: one line at a time, never stacked. */
 .egg-speech {
   white-space: nowrap;
   text-shadow: 0 1px 12px rgba(6, 11, 28, 0.9);
 }
-
 /* Text balance helper */
 .text-balance {
   text-wrap: balance;
 }
-
 /* Stars twinkle in the window scene */
 @keyframes twinkle {
   0%,
@@ -387,7 +366,6 @@ button {
   animation: twinkle var(--dur, 4s) var(--ease-inout) infinite;
   animation-delay: var(--delay, 0s);
 }
-
 /* Live photo badge */
 @keyframes live-pulse {
   0%,
@@ -401,7 +379,6 @@ button {
 .live-badge {
   animation: live-pulse 2.4s ease-out infinite;
 }
-
 /* Wax seal shimmer on the envelope */
 @keyframes seal-glow {
   0%,
@@ -419,7 +396,6 @@ button {
 .seal {
   animation: seal-glow 3.2s var(--ease-inout) infinite;
 }
-
 /* The sealed envelope floats, very slightly, like it is waiting. */
 @keyframes float {
   0%,
@@ -433,7 +409,6 @@ button {
 .float {
   animation: float 5.5s var(--ease-inout) infinite;
 }
-
 /* The blue envelope itself (used by the locked view and the sealed letter) */
 .envelope {
   border-radius: 6px;
@@ -464,7 +439,6 @@ button {
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
   transform-origin: top center;
 }
-
 /* Cursor blink for the system's title bar */
 @keyframes blink {
   0%,
@@ -479,7 +453,6 @@ button {
 .blink {
   animation: blink 1.1s steps(1) infinite;
 }
-
 /* A soft sheen that slides across a button when it is hovered */
 .sheen {
   position: relative;
@@ -497,7 +470,6 @@ button {
 .sheen:hover::after {
   transform: translateX(120%);
 }
-
 @media (prefers-reduced-motion: reduce) {
   .mark-ring,
   .mark-dot,

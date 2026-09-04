@@ -3,11 +3,11 @@ import { motion } from "motion/react";
 import { copy } from "../content/egginaya";
 import { cine } from "../lib/hooks";
 import { cn } from "../utils/cn";
-
 /* ---------- Back to the room ---------- */
 /**
- * A small, quiet pill in the top-left corner. It fades in a beat after the
- * scene does, the arrow slides on hover, and it never fights the content.
+ * A small, quiet pill in the top-left corner, cut from the same cloth as the
+ * QuietButton: same border, same glass, same sheen. A thin arrow sits in front
+ * of the label; on hover it stretches back toward the room. No glow, no fuss.
  */
 export function BackToRoom({ onClick, dark = false }: { onClick: () => void; dark?: boolean }) {
   return (
@@ -19,30 +19,32 @@ export function BackToRoom({ onClick, dark = false }: { onClick: () => void; dar
       transition={{ duration: 1, delay: 0.45, ease: cine }}
       whileTap={{ scale: 0.97 }}
       className={cn(
-        "group fixed left-4 top-4 z-50 inline-flex h-9 items-center gap-2.5 rounded-full border pl-1.5 pr-4 font-mono text-[10.5px] uppercase tracking-[0.26em] backdrop-blur-md transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] md:left-6 md:top-6",
+        "sheen group fixed left-4 top-4 z-50 inline-flex h-10 items-center gap-3 rounded-full border pl-4 pr-5 font-mono text-[10.5px] uppercase tracking-[0.28em] backdrop-blur-sm transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-px active:translate-y-0 active:scale-[0.99] focus-visible:outline-none md:left-6 md:top-6",
         dark
-          ? "border-night/15 bg-white/45 text-night/70 hover:border-night/35 hover:bg-white/70 hover:text-night"
-          : "border-ice/15 bg-night/35 text-ivory/75 hover:border-ice/40 hover:bg-night/55 hover:text-ivory hover:shadow-[0_0_28px_rgba(47,107,255,0.28)]"
+          ? "border-night/20 bg-white/40 text-night/70 hover:border-night/55 hover:bg-night/5 hover:text-night focus-visible:border-night"
+          : "border-ice/25 bg-night/40 text-ivory/80 hover:border-ice/60 hover:bg-ice/8 hover:text-ivory focus-visible:border-ice"
       )}
     >
-      <span
-        className={cn(
-          "flex h-6 w-6 items-center justify-center rounded-full text-[12px] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:-translate-x-0.5",
-          dark ? "bg-night/10 group-hover:bg-night/15" : "bg-ice/10 group-hover:bg-blue/30"
-        )}
-      >
-        ←
+      {/* the arrow: a chevron and a shaft. The shaft grows and the chevron leans back on hover. */}
+      <span aria-hidden className="flex items-center">
+        <svg
+          width="7"
+          height="10"
+          viewBox="0 0 7 10"
+          className="shrink-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:-translate-x-1"
+        >
+          <path d="M6 1 1 5l5 4" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <span className="-ml-[3px] h-px w-2.5 bg-current transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:w-5" />
       </span>
       {copy.back}
     </motion.button>
   );
 }
-
 /* ---------- Kicker: tiny mono label above headings ---------- */
 export function Kicker({ children, className }: { children: ReactNode; className?: string }) {
   return <p className={cn("font-mono text-[10.5px] uppercase tracking-[0.35em] text-ice/60", className)}>{children}</p>;
 }
-
 /* ---------- A quiet pill button (the only button style in the room) ---------- */
 /**
  * A little dot sits in front of the label. On hover it stretches into a dash
@@ -62,7 +64,7 @@ export function QuietButton({
         "sheen group relative inline-flex min-h-11 items-center gap-3 rounded-full border px-6 font-mono text-[12px] uppercase tracking-[0.22em] backdrop-blur-sm transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-px active:translate-y-0 active:scale-[0.99] focus-visible:outline-none",
         dark
           ? "border-night/25 bg-white/30 text-night/80 hover:border-night/60 hover:bg-night/5 hover:text-night focus-visible:border-night"
-          : "border-ice/25 bg-night/40 text-ivory/85 hover:border-ice/60 hover:bg-blue/15 hover:text-ivory hover:shadow-[0_0_30px_rgba(47,107,255,0.25)] focus-visible:border-ice",
+          : "border-ice/25 bg-night/40 text-ivory/85 hover:border-ice/60 hover:bg-blue/15 hover:text-ivory focus-visible:border-ice",
         className
       )}
     >
@@ -76,7 +78,6 @@ export function QuietButton({
     </button>
   );
 }
-
 /* ---------- Scroll cue ---------- */
 /**
  * Sits in the bottom-right corner so it never covers the text.
@@ -105,7 +106,6 @@ export function ScrollCue({ hidden = false, dark = false, className }: { hidden?
     </div>
   );
 }
-
 /* ---------- Evidence (a screenshot), or a placeholder telling you which file to drop in ---------- */
 export function Evidence({
   src,

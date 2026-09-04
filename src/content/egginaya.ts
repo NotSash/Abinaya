@@ -18,31 +18,35 @@
  * Photos can be ANY size or shape. The frames measure each picture when it loads and shape
  * themselves around it, so there is never any empty space beside a picture.
  */
-
 /* ---------- Media (auto-discovered) ---------- */
-
-const photoFiles = import.meta.glob("../assets/photos/*.{jpg,jpeg,png,webp,gif,mp4,mov,webm}", {
+const photoFiles = import.meta.glob("../assets/photos/*.{jpg,jpeg,png,webp,gif,mp4,mov,webm,JPG,JPEG,PNG,WEBP,GIF,MP4,MOV,WEBM}", {
   eager: true,
   import: "default",
 }) as Record<string, string>;
-
 const audioFiles = import.meta.glob("../assets/audio/*.{mp3,m4a,ogg,wav}", {
   eager: true,
   import: "default",
 }) as Record<string, string>;
-
-/** find a dropped-in file by its base name, regardless of extension */
+/** find a dropped-in file by its base name, regardless of extension (or case) */
 function photo(base: string, kind: "image" | "video" = "image"): string | undefined {
   const imageExt = /\.(jpg|jpeg|png|webp|gif)$/i;
   const videoExt = /\.(mp4|mov|webm)$/i;
+  const want = base.toLowerCase();
   const hit = Object.keys(photoFiles).find((p) => {
     const file = p.split("/").pop() ?? "";
-    const name = file.replace(/\.[^.]+$/, "");
-    return name === base && (kind === "image" ? imageExt.test(file) : videoExt.test(file));
+    const name = file.replace(/\.[^.]+$/, "").toLowerCase();
+    return name === want && (kind === "image" ? imageExt.test(file) : videoExt.test(file));
   });
   return hit ? photoFiles[hit] : undefined;
 }
-
+/** the first of several possible base names that actually exists on disk */
+function firstPhoto(bases: string[]): string | undefined {
+  for (const b of bases) {
+    const hit = photo(b);
+    if (hit) return hit;
+  }
+  return undefined;
+}
 export const media = {
   /** local song file, if you ever add one. Otherwise the Spotify player is used. */
   song: Object.values(audioFiles)[0] as string | undefined,
@@ -50,14 +54,12 @@ export const media = {
   songArtist: "Stephen Sanchez",
   /** Stephen Sanchez, Until I Found You (original) */
   spotifyTrackId: "0T5iIrXA4p5GsubkhuBIKV",
-  /** the "maths period" screenshot */
-  mathsScreenshot: photo("maths-period"),
+  /** the "maths period" screenshot. Any of these file names work: maths-period, maths_period, maths period, maths. */
+  mathsScreenshot: firstPhoto(["maths-period", "maths_period", "maths period", "maths", "math-period", "math_period", "math"]),
   /** the signed Instagram Marriage Association message */
   marriageScreenshot: photo("marriage"),
 };
-
 /* ---------- Facts ---------- */
-
 export const facts = {
   name: "Abinaya",
   nickname: "Egginaya",
@@ -69,14 +71,12 @@ export const facts = {
   school: "Same school. Different floors.",
   lunch: "Every break, in her class.",
 };
-
 /* ---------- Copy ---------- */
-
 export const copy = {
   arrival: {
     line: "I built you a whole room, because a card felt too small.",
     sub: "It's yours. Come in. Mind the egg.",
-    button: "come in",
+    button: "Alright, let me in",
   },
   world: {
     corner: "somewhere in the blue",
@@ -86,9 +86,7 @@ export const copy = {
   back: "back to the room",
   scrollCue: "scroll",
 };
-
 /* ---------- Hotspots ---------- */
-
 /**
  * Positions are percentages of the ROOM IMAGE itself (x from left, y from top),
  * not of the screen. The room is drawn to cover the viewport and the marks travel
@@ -96,7 +94,6 @@ export const copy = {
  * window size.
  */
 export type HotspotId = "system" | "archive" | "window" | "envelope" | "egg" | "lunch";
-
 export interface Hotspot {
   id: HotspotId;
   x: number;
@@ -113,7 +110,6 @@ export interface Hotspot {
   /** which side the label sits on */
   side?: "below" | "left" | "right";
 }
-
 export const hotspots: Hotspot[] = [
   { id: "system", x: 19.5, y: 69, label: "the laptop", whisper: "it's been running on you for years", marked: true, zoom: 2.4, side: "right" },
   { id: "archive", x: 12.5, y: 50, label: "the pinboard", whisper: "evidence that you're unfairly photogenic", marked: true, zoom: 2.2, side: "right" },
@@ -122,23 +118,17 @@ export const hotspots: Hotspot[] = [
   { id: "egg", x: 85.5, y: 52.5, label: "an egg", whisper: "don't touch me. I'm an egg.", marked: true, quiet: true, zoom: 1, side: "left" },
   { id: "lunch", x: 91, y: 57, label: "a lunch box", whisper: "still warm, somehow", marked: true, quiet: true, zoom: 2.6, side: "left" },
 ];
-
 export const envelopeWhisper = {
   locked: "not yet. I'm saving the best for last",
   open: "open me. finally.",
 };
-
 /** Everything that counts as "found" in the room (the envelope itself is the reward, not a find). */
 export const discoverable: HotspotId[] = ["system", "archive", "window", "lunch", "egg"];
-
 /** The envelope opens once ALL of these have been seen: the laptop, the pinboard, the window, the lunch box and the egg. */
 export const envelopeRequires: HotspotId[] = [...discoverable];
-
 /* ---------- The egg ---------- */
-
 /** What the egg says before anyone has touched it. */
 export const eggIdle = "don't touch me. I'm an egg.";
-
 /** One line per poke. After the last one it loops the tail. */
 export const eggLines = [
   "I said don't touch me.",
@@ -153,9 +143,7 @@ export const eggLines = [
 ];
 /** where the loop restarts after the last line */
 export const eggLoopFrom = 5;
-
 /* ---------- The System ---------- */
-
 export const system = {
   name: "EGGINAYA SYSTEM",
   build: "build 4.0 (almost)",
@@ -304,9 +292,7 @@ export const system = {
     button: "take me there",
   },
 };
-
 /* ---------- The Archive (memories) ---------- */
-
 export interface Print {
   id: string;
   kind: "photo" | "note";
@@ -329,7 +315,6 @@ export interface Print {
   /** colour of the pushpin holding it */
   pin?: "blue" | "red" | "gold";
 }
-
 export const prints: Print[] = [
   {
     id: "note",
@@ -415,7 +400,6 @@ export const prints: Print[] = [
     pin: "gold",
   },
 ];
-
 export const archive = {
   kicker: "the pinboard",
   hint: "pick one up",
@@ -426,9 +410,7 @@ export const archive = {
   missing: "photo goes here",
   liveHint: "live",
 };
-
 /* ---------- The lunch box (school) ---------- */
-
 export const lunchBox = {
   kicker: "found at the back of the shelf",
   heading: "Every break.",
@@ -440,18 +422,14 @@ export const lunchBox = {
   ],
   sign: "still the best part of the day. still you.",
 };
-
 /* ---------- The window (September 25) ---------- */
-
 export const september = {
   lead: "The day you said yes and quietly ruined every other day for me. Nothing compares now.",
   after: `${facts.yearsTogether[0].toUpperCase()}${facts.yearsTogether.slice(1)}. Feels like four minutes. Also four lifetimes.`,
   line: "Late night. Truth or Dare over text. Somewhere between the truths and the dares we both stopped pretending, and confessed. Best game I ever lost.",
   small: "same sky as that night. I checked.",
 };
-
 /* ---------- About Abinaya (calm section) ---------- */
-
 export const about = {
   kicker: "for Abinaya",
   intro: "Some things I notice.",
@@ -480,9 +458,7 @@ export const about = {
   ],
   continue: "one more thing",
 };
-
 /* ---------- The final message ---------- */
-
 export const finalMessage = {
   greeting: "Happy birthday, Egginaya.",
   paragraphs: [
@@ -493,11 +469,8 @@ export const finalMessage = {
   closing: "Almost four years in, and I'd still pick you on the first day.",
   /** his own words. line breaks are kept. */
   personal: `Happiest Birthday babyyyyyyy, omgggggg u r 21 years old nowwwww ( but you'll always be my kutty papa 🤣 ), here's to us spending mannnnnny more birthdays like thissss, hope u like everything in this, naraiya paasatha kottiruken heeheee, I love you the mossssssst kannama 💖💖💖💖💖
-
 I'll always be your life partner, your well wisher, your besssst friend, your enemy when u feel like fighting, your pillar when u need support, your everyyyything foreverrrrr
-
 Wishing u the bessssssst of days today ( Subtle Foreshadowing: Maybe coz you'll be meeting your fav person ? 😏 )
-
 Can't wait to meet youuuuuuu 😘😘😘😘😘`,
   signoff: "Signing off,",
   signoff2: "Yours lovinglyyyyyy",
