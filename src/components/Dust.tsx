@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 
 /** Slow drifting dust motes over the room. Paused when a scene is open. */
 export function Dust({ active }: { active: boolean }) {
-  const ref = useRef<HTMLCanvasElement | null>(null);
+  const ref = useRef<HTMLCanvasElement>(null);
   const activeRef = useRef(active);
   activeRef.current = active;
 
@@ -12,22 +12,13 @@ export function Dust({ active }: { active: boolean }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let raf = 0;
     let w = 0;
     let h = 0;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let raf = 0;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
 
-    const count = window.innerWidth < 640 ? 34 : 64;
-    const motes = Array.from({ length: count }, () => ({
-      x: Math.random(),
-      y: Math.random(),
-      r: 0.6 + Math.random() * 1.6,
-      vx: (Math.random() - 0.5) * 0.00006,
-      vy: -0.00002 - Math.random() * 0.00005,
-      a: 0.15 + Math.random() * 0.45,
-      p: Math.random() * Math.PI * 2,
-    }));
+    type Mote = { x: number; y: number; r: number; vx: number; vy: number; a: number; t: number };
+    let motes: Mote[] = [];
 
     const resize = () => {
       w = canvas.clientWidth;
@@ -35,42 +26,46 @@ export function Dust({ active }: { active: boolean }) {
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const n = Math.round((w * h) / 26000);
+      motes = Array.from({ length: n }, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: 0.6 + Math.random() * 1.6,
+        vx: -0.08 + Math.random() * 0.16,
+        vy: -0.05 + Math.random() * 0.12,
+        a: 0.15 + Math.random() * 0.45,
+        t: Math.random() * Math.PI * 2,
+      }));
     };
-    resize();
-    window.addEventListener("resize", resize);
 
-    let last = performance.now();
-    const tick = (now: number) => {
+    const tick = () => {
       raf = requestAnimationFrame(tick);
-      const dt = Math.min(50, now - last);
-      last = now;
       if (!activeRef.current) return;
       ctx.clearRect(0, 0, w, h);
       for (const m of motes) {
-        if (!reduce) {
-          m.x += m.vx * dt + Math.sin(now / 4000 + m.p) * 0.00002;
-          m.y += m.vy * dt;
-          if (m.y < -0.02) {
-            m.y = 1.02;
-            m.x = Math.random();
-          }
-          if (m.x < -0.02) m.x = 1.02;
-          if (m.x > 1.02) m.x = -0.02;
-        }
-        const tw = 0.6 + 0.4 * Math.sin(now / 1800 + m.p * 3);
+        m.t += 0.01;
+        m.x += m.vx + Math.sin(m.t) * 0.05;
+        m.y += m.vy;
+        if (m.x < -4) m.x = w + 4;
+        if (m.x > w + 4) m.x = -4;
+        if (m.y < -4) m.y = h + 4;
+        if (m.y > h + 4) m.y = -4;
+        const alpha = m.a * (0.6 + 0.4 * Math.sin(m.t * 1.7));
         ctx.beginPath();
-        ctx.arc(m.x * w, m.y * h, m.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(226, 234, 255, ${m.a * tw})`;
+        ctx.fillStyle = `rgba(230, 238, 255, ${alpha})`;
+        ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
         ctx.fill();
       }
     };
-    raf = requestAnimationFrame(tick);
 
+    resize();
+    tick();
+    window.addEventListener("resize", resize);
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
     };
   }, []);
 
-  return <canvas ref={ref} aria-hidden className="pointer-events-none absolute inset-0 z-[4] h-full w-full" />;
+  return <canvas ref={ref} className="pointer-events-none absolute inset-0 h-full w-full" />;
 }

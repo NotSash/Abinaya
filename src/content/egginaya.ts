@@ -4,23 +4,23 @@
  * Everything personal lives here. Components only read from it.
  *
  * FILES YOU DROP IN (no code changes needed):
- *   src/assets/photos/01.jpg            "Our 1st pic together!!!"      (both of you)
- *   src/assets/photos/02.jpg            "Pretty little babyyyyy"
- *   src/assets/photos/03.jpg            "Sleepyheaddddd -_-"
- *   src/assets/photos/04.jpg            "Shawwtyyyyy"
- *   src/assets/photos/05.jpg            "Baddyyyyyyy"  – the still frame of the Live Photo
- *   src/assets/photos/05.mp4            the moving part of the Live Photo (see README note in Archive)
- *   src/assets/photos/maths-period.png  the "maths mam borrowed my maths period" screenshot
- *   src/assets/photos/marriage.png      the signed Instagram Marriage Association message
- *   src/assets/audio/until-i-found-you.mp3  optional – if present it is used instead of Spotify
+ *   src/assets/photos/01.jpg              "Our 1st pic together!!!" (both of you)
+ *   src/assets/photos/02.jpg              "Pretty little babyyyyy"
+ *   src/assets/photos/03.jpg              "Sleepyheaddddd -_-"
+ *   src/assets/photos/04.jpg              "Shawwtyyyyy" (the text where she admits you're taller)
+ *   src/assets/photos/05.jpg              "Baddyyyyyyy", the still frame of the Live Photo
+ *   src/assets/photos/05.mp4              the moving part of the Live Photo
+ *   src/assets/photos/maths-period.png    the "maths mam borrowed my maths period" screenshot
+ *   src/assets/photos/marriage.png        the signed Instagram Marriage Association message
+ *   src/assets/audio/until-i-found-you.mp3  optional. If present it is used instead of Spotify.
  *
- * Any image extension works (.jpg / .jpeg / .png / .webp / .heic is NOT supported by browsers – export to jpg).
- * For the live photo, .mp4 is safest; .mov also works on iPhone/Safari.
- * Photos can be ANY size or shape – portrait, landscape, square. The frames on the pinboard
- * measure each picture when it loads and shape themselves around it.
+ * Any image extension works (.jpg / .jpeg / .png / .webp). HEIC is NOT supported by browsers, export to jpg.
+ * Photos can be ANY size or shape. The frames measure each picture when it loads and shape
+ * themselves around it, so there is never any empty space beside a picture.
  */
 
 /* ---------- Media (auto-discovered) ---------- */
+
 const photoFiles = import.meta.glob("../assets/photos/*.{jpg,jpeg,png,webp,gif,mp4,mov,webm}", {
   eager: true,
   import: "default",
@@ -48,9 +48,8 @@ export const media = {
   song: Object.values(audioFiles)[0] as string | undefined,
   songTitle: "Until I Found You",
   songArtist: "Stephen Sanchez",
-  /** Stephen Sanchez – Until I Found You (original) */
+  /** Stephen Sanchez, Until I Found You (original) */
   spotifyTrackId: "0T5iIrXA4p5GsubkhuBIKV",
-
   /** the "maths period" screenshot */
   mathsScreenshot: photo("maths-period"),
   /** the signed Instagram Marriage Association message */
@@ -58,6 +57,7 @@ export const media = {
 };
 
 /* ---------- Facts ---------- */
+
 export const facts = {
   name: "Abinaya",
   nickname: "Egginaya",
@@ -71,6 +71,7 @@ export const facts = {
 };
 
 /* ---------- Copy ---------- */
+
 export const copy = {
   arrival: {
     line: "I built you a whole room, because a card felt too small.",
@@ -87,9 +88,12 @@ export const copy = {
 };
 
 /* ---------- Hotspots ---------- */
+
 /**
- * Positions are percentages of the room image (x from left, y from top).
- * Adjust these if you want a mark to sit more exactly on an object.
+ * Positions are percentages of the ROOM IMAGE itself (x from left, y from top),
+ * not of the screen. The room is drawn to cover the viewport and the marks travel
+ * with the picture, so a mark placed on the pinboard stays on the pinboard at any
+ * window size.
  */
 export type HotspotId = "system" | "archive" | "window" | "envelope" | "egg" | "lunch";
 
@@ -106,15 +110,17 @@ export interface Hotspot {
   quiet?: boolean;
   /** how far the camera pushes in when opened */
   zoom: number;
+  /** which side the label sits on */
+  side?: "below" | "left" | "right";
 }
 
 export const hotspots: Hotspot[] = [
-  { id: "system", x: 24, y: 63, label: "the laptop", whisper: "it's been running on you for years", marked: true, zoom: 2.4 },
-  { id: "archive", x: 19, y: 31, label: "the pinboard", whisper: "evidence that you're unfairly photogenic", marked: true, zoom: 2.2 },
-  { id: "window", x: 60, y: 38, label: "the window", whisper: "the night my luck changed", marked: true, zoom: 1.9 },
-  { id: "envelope", x: 33, y: 73, label: "a blue envelope", whisper: "not yet", marked: true, zoom: 2.8 },
-  { id: "egg", x: 86, y: 40, label: "an egg", whisper: "don't touch me. I'm an egg.", marked: true, quiet: true, zoom: 1 },
-  { id: "lunch", x: 91, y: 47, label: "a lunch box", whisper: "still warm, somehow", marked: true, quiet: true, zoom: 2.6 },
+  { id: "system", x: 19.5, y: 69, label: "the laptop", whisper: "it's been running on you for years", marked: true, zoom: 2.4, side: "right" },
+  { id: "archive", x: 12.5, y: 50, label: "the pinboard", whisper: "evidence that you're unfairly photogenic", marked: true, zoom: 2.2, side: "right" },
+  { id: "window", x: 60, y: 38, label: "the window", whisper: "the night my luck changed", marked: true, zoom: 1.9, side: "below" },
+  { id: "envelope", x: 17, y: 84.5, label: "a blue envelope", whisper: "not yet", marked: true, zoom: 2.8, side: "right" },
+  { id: "egg", x: 85.5, y: 52.5, label: "an egg", whisper: "don't touch me. I'm an egg.", marked: true, quiet: true, zoom: 1, side: "left" },
+  { id: "lunch", x: 91, y: 57, label: "a lunch box", whisper: "still warm, somehow", marked: true, quiet: true, zoom: 2.6, side: "left" },
 ];
 
 export const envelopeWhisper = {
@@ -125,12 +131,14 @@ export const envelopeWhisper = {
 /** Everything that counts as "found" in the room (the envelope itself is the reward, not a find). */
 export const discoverable: HotspotId[] = ["system", "archive", "window", "lunch", "egg"];
 
-/** The envelope opens once ALL of these have been seen – the laptop, the pinboard, the window, the lunch box and the egg. */
+/** The envelope opens once ALL of these have been seen: the laptop, the pinboard, the window, the lunch box and the egg. */
 export const envelopeRequires: HotspotId[] = [...discoverable];
 
 /* ---------- The egg ---------- */
+
 /** What the egg says before anyone has touched it. */
 export const eggIdle = "don't touch me. I'm an egg.";
+
 /** One line per poke. After the last one it loops the tail. */
 export const eggLines = [
   "I said don't touch me.",
@@ -147,6 +155,7 @@ export const eggLines = [
 export const eggLoopFrom = 5;
 
 /* ---------- The System ---------- */
+
 export const system = {
   name: "EGGINAYA SYSTEM",
   build: "build 4.0 (almost)",
@@ -185,12 +194,12 @@ export const system = {
     severity: "minor. consequences: permanent. still laughing.",
     status: "unresolved. screenshot preserved. no one wants it fixed.",
     summary: [
-      "Intended message: \"maths mam borrowed the extra period.\"",
-      "Message sent: \"maths mam borrowed my maths period.\"",
+      'Intended message: "maths mam borrowed the extra period."',
+      'Message sent: "maths mam borrowed my maths period."',
       "Message was read. Message was screenshotted. Message was never forgotten.",
     ],
     notes: [
-      "Follow-up questions (\"borrowed it from where?\", \"did she give it back?\") were not appreciated.",
+      'Follow-up questions ("borrowed it from where?", "did she give it back?") were not appreciated.',
       "The 0.01% has been located. It lives here.",
       "Original meaning unaffected. My affection for the sender: increased, somehow.",
       "Recommended fix: none. Please keep texting me exactly like this.",
@@ -227,22 +236,22 @@ export const system = {
   },
   /**
    * The media folder. Each "file" is one thing that is completely, unmistakably her.
-   *   name  – the filename on the left
-   *   meta  – the short grey tag on the right
-   *   note  – the actual line, written to her
+   *   name  the filename on the left
+   *   meta  the short grey tag on the right
+   *   note  the actual line, written to her
    */
   mediaFiles: [
     {
       name: "shinchan_every_episode.mp4",
       tag: "shin chan",
       meta: "rewatched: countless",
-      note: "You've seen every episode and you still laugh like it's the first time – the same wheezy, head-thrown-back laugh at the same butt-dance jokes. I stopped watching the screen a long time ago. I watch you watching it.",
+      note: "You've seen every episode and you still laugh like it's the first time. That same wheezy, head-thrown-back laugh, at the same butt-dance jokes, every single time. I stopped watching the screen a long time ago. I watch you watching it.",
     },
     {
       name: "hawkins_survival_plan.txt",
       tag: "stranger things",
       meta: "upside down: not scared",
-      note: "If the Upside Down ever opened up in our street, you'd be the one holding the flashlight and I'd be the one holding your hand. You're my Eleven – small, stubborn, and easily the strongest person in the room. Eggos are on me.",
+      note: "If the Upside Down ever opened up in our street, you'd be the one holding the flashlight and I'd be the one holding your hand. You're my Eleven. Small, stubborn, and easily the strongest person in the room. Eggos are on me.",
     },
     {
       name: "young_sheldon_s1-s7.log",
@@ -297,6 +306,7 @@ export const system = {
 };
 
 /* ---------- The Archive (memories) ---------- */
+
 export interface Print {
   id: string;
   kind: "photo" | "note";
@@ -379,10 +389,10 @@ export const prints: Print[] = [
     id: "p4",
     kind: "photo",
     src: photo("04"),
-    alt: "Abinaya",
+    alt: "A text where Abinaya admits Sashwath is taller",
     caption: "Shawwtyyyyy",
-    detail: "the whole room went quiet. it was just me. still counts.",
-    more: "I don't know what you were looking at here. I know what I was looking at.",
+    detail: "exhibit A. your own words, in writing: I'm taller. case closed, shorty.",
+    more: "Years of you insisting you're the tall one, and then you go and type this. I've screenshotted it, framed it, and pinned it up. Argue all you like, you can't argue with your own texts. I love you the most. From up here.",
     tilt: -3,
     x: 54,
     y: 70,
@@ -416,6 +426,7 @@ export const archive = {
 };
 
 /* ---------- The lunch box (school) ---------- */
+
 export const lunchBox = {
   kicker: "found at the back of the shelf",
   heading: "Every break.",
@@ -429,6 +440,7 @@ export const lunchBox = {
 };
 
 /* ---------- The window (September 25) ---------- */
+
 export const september = {
   lead: "The day you said yes and quietly ruined every other day for me. Nothing compares now.",
   after: `${facts.yearsTogether[0].toUpperCase()}${facts.yearsTogether.slice(1)}. Feels like four minutes. Also four lifetimes.`,
@@ -437,6 +449,7 @@ export const september = {
 };
 
 /* ---------- About Abinaya (calm section) ---------- */
+
 export const about = {
   kicker: "for Abinaya",
   intro: "Some things I notice.",
@@ -467,6 +480,7 @@ export const about = {
 };
 
 /* ---------- The final message ---------- */
+
 export const finalMessage = {
   greeting: "Happy birthday, Egginaya.",
   paragraphs: [

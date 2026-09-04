@@ -15,9 +15,10 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Path mapping (no baseUrl: it is deprecated; paths resolve relative to this file) */
+    /* Path mapping */
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["src/*"]
     },
 
     /* Linting */

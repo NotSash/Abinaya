@@ -1,1 +1,1 @@
-Optional: until-i-found-you.mp3 goes here. If absent, the Spotify player is used.
+Optional: drop until-i-found-you.mp3 here and it is used instead of the Spotify player.

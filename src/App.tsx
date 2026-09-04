@@ -50,7 +50,9 @@ export default function App() {
   return (
     <div className="relative h-full w-full overflow-hidden bg-night text-ivory" style={textureVars}>
       {/* The room is always there underneath. */}
-      {scene === "world" && <World visited={visited} envelopeUnlocked={envelopeUnlocked} active={open === null} onOpen={openPlace} />}
+      {scene === "world" && (
+        <World visited={visited} envelopeUnlocked={envelopeUnlocked} active={open === null} focus={open} onOpen={openPlace} />
+      )}
 
       {/* Scenes that open on top */}
       <AnimatePresence>

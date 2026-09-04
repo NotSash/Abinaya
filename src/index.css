@@ -163,74 +163,118 @@ button {
   border-radius: 999px;
 }
 
-/* Hotspot marks in the room */
+/* ------------------------------------------------------------------ */
+/* Hotspot marks in the room                                           */
+/*  unseen : a white dot that glows, with a ripple leaving it every 1s */
+/*  seen   : the same dot turned bright light blue, still fully visible*/
+/* ------------------------------------------------------------------ */
 @keyframes mark-ring {
   0% {
-    transform: translate(-50%, -50%) scale(0.6);
-    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0.95;
   }
   100% {
-    transform: translate(-50%, -50%) scale(2.4);
+    transform: translate(-50%, -50%) scale(2.6);
     opacity: 0;
+  }
+}
+@keyframes mark-breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(6, 11, 28, 0.45),
+      0 0 26px rgba(255, 255, 255, 0.85),
+      0 0 8px rgba(255, 255, 255, 1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(6, 11, 28, 0.45),
+      0 0 40px rgba(255, 255, 255, 1),
+      0 0 12px rgba(255, 255, 255, 1);
   }
 }
 .mark-dot {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 9px;
-  height: 9px;
+  width: 15px;
+  height: 15px;
   border-radius: 999px;
-  background: #f3ecdd;
+  background: #ffffff;
   transform: translate(-50%, -50%);
   box-shadow:
-    0 0 0 1px rgba(6, 11, 28, 0.5),
-    0 0 22px rgba(217, 230, 255, 0.75),
-    0 0 6px rgba(255, 255, 255, 0.9);
-  transition: transform 0.6s var(--ease-cine), opacity 0.6s var(--ease-cine);
+    0 0 0 1px rgba(6, 11, 28, 0.45),
+    0 0 26px rgba(255, 255, 255, 0.85),
+    0 0 8px rgba(255, 255, 255, 1);
+  animation: mark-breathe 2s var(--ease-inout) infinite;
+  transition:
+    transform 0.6s var(--ease-cine),
+    background-color 0.8s var(--ease-cine),
+    box-shadow 0.8s var(--ease-cine);
 }
 .mark-ring {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
-  border: 1px solid rgba(217, 230, 255, 0.7);
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.35);
   transform: translate(-50%, -50%);
-  animation: mark-ring 2.8s var(--ease-cine) infinite;
+  animation: mark-ring 1s ease-out infinite;
+}
+/* a second ripple, half a beat behind, so the pulse reads as a steady 1s rhythm */
+.mark-ring-2 {
+  animation-delay: -0.5s;
+  opacity: 0;
 }
 .mark-seen .mark-dot {
-  opacity: 0.35;
-  transform: translate(-50%, -50%) scale(0.85);
+  background: #7fc2ff;
+  animation: none;
+  box-shadow:
+    0 0 0 1px rgba(6, 11, 28, 0.45),
+    0 0 20px rgba(127, 194, 255, 0.95),
+    0 0 6px rgba(190, 226, 255, 1);
 }
-.mark-seen .mark-ring {
+.mark-seen .mark-ring,
+.mark-seen .mark-ring-2 {
   display: none;
 }
 /* Easter-egg marks: a touch smaller, but every bit as bright as the others. */
 .mark-quiet .mark-dot {
-  width: 7px;
-  height: 7px;
-  opacity: 1;
-  background: #f3ecdd;
-  box-shadow:
-    0 0 0 1px rgba(6, 11, 28, 0.5),
-    0 0 18px rgba(217, 230, 255, 0.65),
-    0 0 4px rgba(255, 255, 255, 0.8);
+  width: 12px;
+  height: 12px;
 }
 .mark-quiet .mark-ring {
-  width: 22px;
-  height: 22px;
-  border-color: rgba(243, 236, 221, 0.55);
-  animation-delay: -2.1s;
+  width: 28px;
+  height: 28px;
+}
+/* The envelope, once it can be opened: gold. */
+.mark-gold .mark-dot {
+  background: #ffe6b0;
+  animation: none;
+  box-shadow:
+    0 0 0 1px rgba(6, 11, 28, 0.45),
+    0 0 28px rgba(232, 201, 138, 0.95),
+    0 0 8px rgba(255, 240, 200, 1);
+}
+.mark-gold .mark-ring {
+  border-color: rgba(232, 201, 138, 0.9);
+  box-shadow: 0 0 10px rgba(232, 201, 138, 0.4);
 }
 .hotspot:hover .mark-dot,
 .hotspot:focus-visible .mark-dot {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1.35);
+  transform: translate(-50%, -50%) scale(1.3);
 }
 .hotspot:focus-visible {
   outline: none;
+}
+/* The label that appears when a mark is hovered: bright and legible over the room. */
+.mark-label {
+  text-shadow:
+    0 1px 2px rgba(6, 11, 28, 0.95),
+    0 0 16px rgba(6, 11, 28, 0.9);
 }
 
 /* Lamp glow */
@@ -260,7 +304,7 @@ button {
   animation: haze 18s var(--ease-inout) infinite alternate;
 }
 
-/* Scroll cue: a bright little thread that drops down, so she knows there is more. */
+/* Scroll cue: a bright little thread that drops down, tucked into the bottom-right corner. */
 @keyframes cue-drop {
   0% {
     transform: scaleY(0);
@@ -309,19 +353,20 @@ button {
   box-shadow: 0 0 14px rgba(217, 230, 255, 0.8);
   animation: cue-dot 2.2s var(--ease-inout) infinite;
 }
+/* on paper */
+.cue-line-dark {
+  background: linear-gradient(180deg, rgba(6, 11, 28, 0.05), rgba(6, 11, 28, 0.8));
+  box-shadow: none;
+}
+.cue-dot-dark {
+  background: rgba(6, 11, 28, 0.8);
+  box-shadow: none;
+}
 
 /* The egg's speech: one line at a time, never stacked. */
 .egg-speech {
   white-space: nowrap;
   text-shadow: 0 1px 12px rgba(6, 11, 28, 0.9);
-}
-
-/* Bracketed placeholders (nothing should be left in brackets, but just in case) */
-.placeholder {
-  background: rgba(232, 201, 138, 0.14);
-  color: rgba(232, 201, 138, 0.9);
-  border-radius: 3px;
-  padding: 0 0.3em;
 }
 
 /* Text balance helper */
@@ -361,45 +406,65 @@ button {
   animation: live-pulse 2.4s ease-out infinite;
 }
 
-/* Wax seal shimmer on the locked envelope */
+/* Wax seal shimmer on the envelope */
 @keyframes seal-glow {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(232, 201, 138, 0.0), 0 2px 10px rgba(0, 0, 0, 0.35);
+    box-shadow:
+      0 0 0 0 rgba(232, 201, 138, 0),
+      0 2px 10px rgba(0, 0, 0, 0.35);
   }
   50% {
-    box-shadow: 0 0 22px 4px rgba(232, 201, 138, 0.28), 0 2px 10px rgba(0, 0, 0, 0.35);
+    box-shadow:
+      0 0 22px 4px rgba(232, 201, 138, 0.28),
+      0 2px 10px rgba(0, 0, 0, 0.35);
   }
 }
-.seal-glow {
+.seal {
   animation: seal-glow 3.2s var(--ease-inout) infinite;
 }
 
-/* Cursor blink for the system */
-@keyframes blink {
+/* The sealed envelope floats, very slightly, like it is waiting. */
+@keyframes float {
   0%,
-  49% {
-    opacity: 1;
-  }
-  50%,
   100% {
-    opacity: 0;
+    transform: translateY(0) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(-7px) rotate(-4deg);
   }
 }
-.blink {
-  animation: blink 1.1s steps(1) infinite;
+.float {
+  animation: float 5.5s var(--ease-inout) infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .mark-ring,
-  .lamp-glow,
-  .haze,
-  .cue-line,
-  .cue-dot,
-  .star,
-  .live-badge,
-  .seal-glow,
-  .blink {
-    animation: none !important;
-  }
+/* The blue envelope itself (used by the locked view and the sealed letter) */
+.envelope {
+  border-radius: 6px;
+  background: linear-gradient(160deg, #4d86ff 0%, #2f6bff 45%, #1f4fd1 100%);
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.55),
+    0 8px 18px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  overflow: hidden;
+}
+.envelope::before {
+  /* the two lower folds */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top left, rgba(255, 255, 255, 0.1) 0 50%, transparent 50.5%),
+    linear-gradient(to top right, rgba(0, 0, 0, 0.14) 0 50%, transparent 50.5%);
+}
+.envelope-flap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 58%;
+  background: linear-gradient(180deg, #5f95ff 0%, #3b74ff 100%);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+  transform-origin: top center;
 }

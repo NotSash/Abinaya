@@ -1,29 +1,21 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { deskImg } from "../lib/assets";
 import { archive, prints, type Print } from "../content/egginaya";
+import { deskImg } from "../lib/assets";
 import { cine, useEscape, useIsTouch, useViewport } from "../lib/hooks";
 import { cn } from "../utils/cn";
 import { BackToRoom, Kicker } from "./ui";
 
-/**
- * Photos come in every shape. Each frame measures its picture once it loads and
- * remembers the ratio here, so the small print and the lifted print agree instantly.
- */
-const DEFAULT_ASPECT = 4 / 5;
-const aspectCache = new Map<string, number>();
-const clampAspect = (a: number) => Math.min(1.85, Math.max(0.55, a));
-
 export function Archive({ onBack }: { onBack: () => void }) {
   const [picked, setPicked] = useState<string | null>(null);
-  const touch = useIsTouch();
   const { w: vw, h: vh } = useViewport();
-  const narrow = vw < 768;
+  const touch = useIsTouch();
+  const stacked = vw < 720;
+  const scale = Math.max(0.72, Math.min(1.1, Math.min(vw / 1280, vh / 800)));
 
-  const close = () => setPicked(null);
-  useEscape(picked ? close : onBack);
+  useEscape(() => (picked ? setPicked(null) : onBack()));
 
-  const active = prints.find((p) => p.id === picked) ?? null;
+  const current = prints.find((p) => p.id === picked) ?? null;
 
   return (
     <motion.div
@@ -31,46 +23,39 @@ export function Archive({ onBack }: { onBack: () => void }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.6 } }}
-      transition={{ duration: 0.9, ease: cine }}
+      transition={{ duration: 1, ease: cine }}
     >
-      <BackToRoom onClick={onBack} />
-
-      {/* Desk */}
+      {/* the desk */}
       <motion.img
         src={deskImg}
         alt=""
-        initial={{ scale: 1.08, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 2, ease: cine }}
-        className="absolute inset-0 h-full w-full object-cover"
         draggable={false}
+        className="absolute inset-0 h-full w-full select-none object-cover"
+        initial={{ scale: 1.08 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 2.4, ease: cine }}
       />
-      <div className="absolute inset-0 bg-[radial-gradient(70%_60%_at_50%_45%,transparent_30%,rgba(6,11,28,0.7)_100%)]" />
+      <div className="absolute inset-0 bg-night/35" />
+      <div className="pointer-events-none absolute inset-0 [background:radial-gradient(70%_60%_at_50%_40%,transparent_40%,rgba(6,11,28,0.7)_100%)]" />
       <div className="grain" />
 
-      {/* Heading */}
-      <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1.2, delay: 0.5, ease: cine }}
-        className="pointer-events-none absolute right-5 top-5 z-10 text-right md:right-8 md:top-7"
-      >
+      <BackToRoom onClick={onBack} />
+      <div className="pointer-events-none absolute right-6 top-6 z-30 text-right md:right-8 md:top-8">
         <Kicker>{archive.kicker}</Kicker>
-        <div className="mt-1 font-display text-[15px] italic text-ivory/70">{touch ? archive.hintTouch : archive.hint}</div>
-      </motion.div>
+        <p className="mt-2 font-display text-[16px] italic text-ivory/60">{touch ? archive.hintTouch : archive.hint}</p>
+      </div>
 
-      {/* Prints */}
-      {narrow ? (
-        <div className="scroll-area absolute inset-0 z-[6] px-4 pb-16 pt-[max(6rem,env(safe-area-inset-top))]">
-          <div className="mx-auto grid max-w-[520px] grid-cols-2 gap-x-4 gap-y-10">
+      {/* prints on the desk */}
+      {stacked ? (
+        <div className="scroll-area absolute inset-0 pt-[max(5rem,env(safe-area-inset-top))]">
+          <div className="mx-auto flex max-w-[420px] flex-col items-center gap-14 px-6 pb-24 pt-8">
             {prints.map((p, i) => (
               <motion.div
                 key={p.id}
-                initial={{ opacity: 0, y: 14 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.9, delay: 0.3 + i * 0.08, ease: cine }}
-                className={cn(p.kind === "note" && "col-span-2 mx-auto w-[78%]")}
-                style={{ rotate: `${p.tilt}deg` }}
+                transition={{ duration: 0.9, delay: 0.15 + i * 0.08, ease: cine }}
+                style={{ width: Math.min(p.w * 1.25, vw - 56), rotate: p.tilt / 2 }}
               >
                 <PrintCard print={p} onPick={() => setPicked(p.id)} hidden={picked === p.id} />
               </motion.div>
@@ -78,20 +63,15 @@ export function Archive({ onBack }: { onBack: () => void }) {
           </div>
         </div>
       ) : (
-        <div className="absolute inset-0 z-[6]">
+        <div className="absolute inset-0">
           {prints.map((p, i) => (
             <motion.div
               key={p.id}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9, delay: 0.3 + i * 0.08, ease: cine }}
-              className="absolute -translate-x-1/2 -translate-y-1/2"
-              style={{
-                left: `${p.x}%`,
-                top: `${p.y}%`,
-                width: Math.round(p.w * Math.min(1, vw / 1280)),
-                rotate: `${p.tilt}deg`,
-              }}
+              className="absolute"
+              style={{ left: `${p.x}%`, top: `${p.y}%`, width: p.w * scale, x: "-50%", y: "-50%" }}
+              initial={{ opacity: 0, y: "-46%", rotate: p.tilt - 2 }}
+              animate={{ opacity: 1, y: "-50%", rotate: p.tilt }}
+              transition={{ duration: 1.1, delay: 0.2 + i * 0.09, ease: cine }}
             >
               <PrintCard print={p} onPick={() => setPicked(p.id)} hidden={picked === p.id} />
             </motion.div>
@@ -99,53 +79,52 @@ export function Archive({ onBack }: { onBack: () => void }) {
         </div>
       )}
 
-      {/* Picked up */}
+      {/* picked up */}
       <AnimatePresence>
-        {active && (
+        {current && (
           <motion.div
             key="lift"
-            className="scroll-area absolute inset-0 z-20 bg-night/75 backdrop-blur-[3px]"
+            className="absolute inset-0 z-50 flex flex-col items-center justify-center px-5"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, transition: { duration: 0.4 } }}
             transition={{ duration: 0.5 }}
-            onClick={close}
+            onClick={() => setPicked(null)}
           >
-            <div className="flex min-h-full items-center justify-center px-5 py-[max(4.5rem,env(safe-area-inset-top))] md:px-10">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, rotate: active.tilt, y: 30 }}
-                animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
-                exit={{ opacity: 0, scale: 0.94, rotate: active.tilt, y: 20 }}
-                transition={{ duration: 0.8, ease: cine }}
-                className="my-auto flex w-full flex-col items-center"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <PrintCard print={active} big maxW={Math.min(vw - 40, 560)} maxH={vh * (narrow ? 0.46 : 0.52)} />
-
-                {active.more && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 1, delay: 0.45, ease: cine }}
-                    className="paper relative mt-7 w-full max-w-[440px] rounded-[3px] px-6 pb-5 pt-6 text-center shadow-[0_18px_50px_rgba(0,0,0,0.55)]"
-                    style={{ rotate: `${-active.tilt / 2}deg` }}
-                  >
-                    <span className="pushpin pushpin-gold" />
-                    <p className="hand text-[24px] leading-[1.25] text-[#241c0e] md:text-[27px]">{active.more}</p>
-                  </motion.div>
-                )}
-
-                <div className="mt-7 text-center">
-                  <button
-                    type="button"
-                    onClick={close}
-                    className="min-h-11 rounded-full border border-ice/30 bg-night/40 px-5 font-mono text-[11px] uppercase tracking-[0.25em] text-ivory/80 backdrop-blur-sm transition-colors hover:border-ice/60 hover:text-ivory"
-                  >
-                    {archive.putBack}
-                  </button>
-                </div>
-              </motion.div>
-            </div>
+            <div className="absolute inset-0 bg-night/55 backdrop-blur-md" />
+            <motion.div
+              className="relative flex flex-col items-center"
+              initial={{ scale: 0.9, y: 30, rotate: current.tilt }}
+              animate={{ scale: 1, y: 0, rotate: 0 }}
+              exit={{ scale: 0.92, y: 20, opacity: 0, transition: { duration: 0.4 } }}
+              transition={{ duration: 0.9, ease: cine }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <PrintCard
+                print={current}
+                big
+                maxW={Math.min(vw - 48, 520)}
+                maxH={Math.max(240, vh * (current.more ? 0.56 : 0.72))}
+              />
+              {current.more && (
+                <motion.div
+                  initial={{ opacity: 0, y: 12, rotate: -1 }}
+                  animate={{ opacity: 1, y: 0, rotate: -1.2 }}
+                  transition={{ duration: 0.9, delay: 0.35, ease: cine }}
+                  className="sticky-note relative mt-8 w-[min(560px,92vw)] px-7 py-6 text-center shadow-[0_18px_40px_rgba(0,0,0,0.45)]"
+                >
+                  <span className="pushpin pushpin-gold" />
+                  <p className="hand text-[24px] leading-[1.35] md:text-[27px]">{current.more}</p>
+                </motion.div>
+              )}
+            </motion.div>
+            <button
+              type="button"
+              onClick={() => setPicked(null)}
+              className="absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 font-mono text-[10.5px] uppercase tracking-[0.35em] text-ice/60 hover:text-ice"
+            >
+              {archive.putBack}
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -153,7 +132,7 @@ export function Archive({ onBack }: { onBack: () => void }) {
   );
 }
 
-/* ---------- A single print ---------- */
+/* ------------------------------------------------------------------ */
 
 function PrintCard({
   print,
@@ -167,90 +146,78 @@ function PrintCard({
   onPick?: () => void;
   hidden?: boolean;
   big?: boolean;
-  /** lifted view: the largest box the picture may occupy */
   maxW?: number;
   maxH?: number;
 }) {
   const touch = useIsTouch();
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  // width / height of the picture. Portrait 4:5 until the real file tells us otherwise.
+  const [aspect, setAspect] = useState(0.8);
   const [playing, setPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const isLive = Boolean(print.live);
 
-  // The frame shapes itself around the picture.
-  const cacheKey = print.src ?? print.live ?? print.id;
-  const [aspect, setAspect] = useState<number>(() => aspectCache.get(cacheKey) ?? DEFAULT_ASPECT);
   const learnAspect = (w: number, h: number) => {
-    if (!w || !h) return;
-    const a = clampAspect(w / h);
-    aspectCache.set(cacheKey, a);
-    setAspect(a);
+    if (w > 0 && h > 0) setAspect(w / h);
   };
 
-  // Live photos play when picked up (and on hover, on desktop).
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (big || playing) {
-      v.currentTime = 0;
-      v.play().catch(() => {});
-    } else {
+    if (big || playing) v.play().catch(() => {});
+    else {
       v.pause();
       v.currentTime = 0;
     }
   }, [big, playing]);
-
-  const isLive = !!print.live;
-  const pinClass = print.pin === "red" ? "pushpin-red" : print.pin === "gold" ? "pushpin-gold" : "";
 
   if (print.kind === "note") {
     return (
       <button
         type="button"
         onClick={onPick}
-        disabled={!onPick}
         className={cn(
-          "sticky-note relative block w-full rounded-[2px] px-5 pb-6 pt-7 text-left shadow-[0_16px_40px_rgba(0,0,0,0.5),0_2px_6px_rgba(0,0,0,0.3)] transition-transform duration-500",
-          onPick && "hover:-translate-y-1 hover:rotate-[0.5deg]",
+          "sticky-note relative block w-full px-5 pb-6 pt-6 text-left shadow-[0_16px_40px_rgba(0,0,0,0.45)] transition-transform duration-500",
+          onPick && "hover:-translate-y-1.5 hover:rotate-[0.6deg]",
           hidden && "opacity-0",
-          big && "max-w-[420px] px-8 pb-8 pt-9"
+          big && "w-[min(420px,88vw)] px-7 pb-8 pt-7"
         )}
       >
-        <span className={cn("pushpin", pinClass)} />
-        <div className={cn("hand leading-[1.15] text-[#2a2110]", big ? "text-[36px]" : "text-[24px]")}>{print.caption}</div>
-        {print.detail && (
-          <div className={cn("mt-2 font-display italic text-[#2a2110]/65", big ? "text-[17px]" : "text-[13px]")}>{print.detail}</div>
-        )}
+        <span className={cn("pushpin", print.pin === "red" && "pushpin-red", print.pin === "gold" && "pushpin-gold")} />
+        <p className={cn("hand text-[24px] leading-[1.2]", big && "text-[30px]")}>{print.caption}</p>
+        {print.detail && <p className={cn("hand mt-2 text-[17px] leading-[1.3] opacity-70", big && "text-[21px]")}>{print.detail}</p>}
       </button>
     );
   }
 
-  // Lifted view: fit the picture inside the allowed box, keeping its true shape.
-  let frameStyle: React.CSSProperties = { aspectRatio: aspect };
-  let cardStyle: React.CSSProperties | undefined;
+  // The paper border around the picture, in px. The card is exactly picture + border, never wider.
+  const pad = big ? 14 : 12;
+  let frameStyle: CSSProperties = { width: "100%", aspectRatio: String(aspect) };
+  let cardStyle: CSSProperties = { padding: pad, paddingBottom: pad + 2 };
   if (big && maxW && maxH) {
-    const w = Math.max(200, Math.min(maxW, maxH * aspect));
+    const innerMaxW = maxW - pad * 2;
+    const w = Math.max(160, Math.min(innerMaxW, maxH * aspect));
     const h = w / aspect;
     frameStyle = { width: w, height: h };
-    cardStyle = { width: w + 24 };
+    cardStyle = { ...cardStyle, width: w + pad * 2 };
   }
 
   return (
     <button
       type="button"
       onClick={onPick}
-      disabled={!onPick}
       onPointerEnter={() => !touch && isLive && setPlaying(true)}
       onPointerLeave={() => setPlaying(false)}
       style={cardStyle}
       className={cn(
-        "polaroid relative block w-full rounded-[2px] p-3 pb-3.5 text-left shadow-[0_18px_50px_rgba(0,0,0,0.5),0_2px_6px_rgba(0,0,0,0.35)] transition-transform duration-500",
+        "polaroid relative block w-full rounded-[2px] text-left shadow-[0_18px_50px_rgba(0,0,0,0.5),0_2px_6px_rgba(0,0,0,0.35)] transition-transform duration-500",
         onPick && "hover:-translate-y-1.5 hover:rotate-[0.6deg]",
         hidden && "opacity-0",
-        big && "max-w-full p-3.5 pb-4"
+        big && "max-w-full cursor-default"
       )}
     >
-      {!big && <span className={cn("pushpin", pinClass)} />}
+      {!big && <span className={cn("pushpin", print.pin === "red" && "pushpin-red", print.pin === "gold" && "pushpin-gold")} />}
 
-      <div className="relative w-full overflow-hidden bg-[#1a2140] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.12)]" style={frameStyle}>
+      <div style={frameStyle} className="relative w-full overflow-hidden bg-[#1a2140] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.12)]">
         {print.src ? (
           <img
             src={print.src}
@@ -260,7 +227,7 @@ function PrintCard({
             onLoad={(e) => learnAspect(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)}
           />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[radial-gradient(60%_50%_at_50%_40%,rgba(47,107,255,0.35),rgba(10,19,48,1))] text-center">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center [background:radial-gradient(60%_60%_at_50%_40%,rgba(47,107,255,0.35),transparent_70%)]">
             <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-ice/50">{archive.missing}</span>
             <span className="font-mono text-[9px] text-ice/35">src/assets/photos/{print.id.replace("p", "0")}.jpg</span>
           </div>
@@ -292,9 +259,9 @@ function PrintCard({
         )}
       </div>
 
-      <div className={cn("hand mt-3 leading-[1.1] text-[#241c0e]", big ? "text-[32px]" : "text-[21px]")}>{print.caption}</div>
+      <p className={cn("hand mt-3 text-[24px] leading-[1.1] text-[#1a1a1a]", big && "mt-4 text-[30px]")}>{print.caption}</p>
       {print.detail && (
-        <div className={cn("mt-1 font-display italic text-[#241c0e]/60", big ? "text-[16px]" : "text-[12.5px]")}>{print.detail}</div>
+        <p className={cn("mt-1 font-display text-[14px] italic leading-[1.3] text-[#1a1a1a]/60", big && "text-[16px]")}>{print.detail}</p>
       )}
     </button>
   );

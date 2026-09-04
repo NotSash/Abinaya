@@ -7,13 +7,10 @@ import type { HotspotId } from "../content/egginaya";
  */
 export function useVisited() {
   const [visited, setVisited] = useState<HotspotId[]>([]);
-
   const mark = useCallback((id: HotspotId) => {
     setVisited((v) => (v.includes(id) ? v : [...v, id]));
   }, []);
-
   const reset = useCallback(() => setVisited([]), []);
-
   return { visited, mark, reset };
 }
 
