@@ -60,5 +60,15 @@ export function useViewport() {
   return size;
 }
 
+/** Close the current scene on Escape. */
+export function useEscape(handler: () => void, enabled = true) {
+  useEffect(() => {
+    if (!enabled) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && handler();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handler, enabled]);
+}
+
 export const cine = [0.16, 1, 0.3, 1] as const;
 export const inOut = [0.65, 0, 0.35, 1] as const;

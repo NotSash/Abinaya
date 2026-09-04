@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import deskImg from "../assets/desk.jpg";
-import { prints, type Print } from "../content/egginaya";
-import { cine, useViewport } from "../lib/hooks";
+import { deskImg } from "../lib/assets";
+import { archive, prints, type Print } from "../content/egginaya";
+import { cine, useEscape, useViewport } from "../lib/hooks";
 import { cn } from "../utils/cn";
 import { BackToRoom, Placeholder } from "./ui";
 
@@ -12,15 +12,12 @@ export function Archive({ onBack }: { onBack: () => void }) {
   const narrow = w < 820;
   const current = prints.find((p) => p.id === open);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
+  useEscape(
+    useCallback(() => {
       if (open) setOpen(null);
       else onBack();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onBack]);
+    }, [open, onBack])
+  );
 
   return (
     <motion.div
@@ -51,7 +48,7 @@ export function Archive({ onBack }: { onBack: () => void }) {
         transition={{ duration: 1, delay: 1.1 }}
         className="pointer-events-none absolute right-5 top-7 z-10 text-right font-display text-[15px] italic text-ivory/60 md:right-8"
       >
-        pick one up
+        {archive.hint}
       </motion.p>
 
       {narrow ? (
@@ -114,7 +111,7 @@ export function Archive({ onBack }: { onBack: () => void }) {
               onClick={() => setOpen(null)}
               className="absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 min-h-11 -translate-x-1/2 font-display text-[17px] italic text-ivory/70 hover:text-ivory"
             >
-              put it back
+              {archive.putBack}
             </button>
           </motion.div>
         )}
@@ -129,7 +126,7 @@ function PrintObject({ p, width, onOpen, hidden }: { p: Print; width: number; on
       type="button"
       layoutId={`print-${p.id}`}
       onClick={onOpen}
-      aria-label={p.kind === "note" ? "A note about school" : `Photo: ${p.caption}`}
+      aria-label={p.kind === "note" ? "A note" : `Photo: ${p.caption}`}
       whileHover={{ y: -4, rotate: p.tilt * 0.6 }}
       transition={{ layout: { duration: 0.75, ease: cine }, y: { duration: 0.5, ease: cine }, rotate: { duration: 0.6, ease: cine } }}
       style={{ width, rotate: p.tilt, opacity: hidden ? 0 : 1 }}
@@ -146,9 +143,9 @@ function PrintFace({ p, large }: { p: Print; large?: boolean }) {
       <div className={cn("paper paper-lined px-5 pb-6 pt-7", large ? "px-8 pb-10 pt-9" : "")}>
         <p className={cn("font-display leading-[28px] text-navy", large ? "text-[22px]" : "text-[18px]")}>{p.caption}</p>
         {p.detail && <p className={cn("font-display italic leading-[28px] text-navy/75", large ? "text-[22px]" : "text-[18px]")}>{p.detail}</p>}
-        {large && (
+        {large && p.more && (
           <p className="mt-[28px] font-display text-[20px] leading-[28px] text-navy/80">
-            <Placeholder tone="dark">[What you remember about those lunch breaks. Short is fine.]</Placeholder>
+            <Placeholder tone="dark">{p.more}</Placeholder>
           </p>
         )}
       </div>

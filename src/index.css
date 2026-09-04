@@ -166,14 +166,22 @@ button {
   opacity: 0.35;
   transform: scale(0.85);
 }
+/* Easter-egg marks: a touch smaller, but every bit as bright as the others. */
 .mark-quiet .mark-dot {
-  width: 5px;
-  height: 5px;
-  opacity: 0.55;
-  box-shadow: none;
+  width: 7px;
+  height: 7px;
+  opacity: 1;
+  background: #f3ecdd;
+  box-shadow:
+    0 0 0 1px rgba(6, 11, 28, 0.5),
+    0 0 18px rgba(217, 230, 255, 0.65),
+    0 0 4px rgba(255, 255, 255, 0.8);
 }
 .mark-quiet .mark-ring {
-  display: none;
+  width: 22px;
+  height: 22px;
+  border-color: rgba(243, 236, 221, 0.55);
+  animation-delay: -2.1s;
 }
 .hotspot:hover .mark-dot,
 .hotspot:focus-visible .mark-dot {
@@ -277,10 +285,68 @@ button {
   text-wrap: balance;
 }
 
+/* Scroll cue: a bright little thread that drops down, so she knows there is more. */
+@keyframes cue-drop {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+    opacity: 0;
+  }
+  35% {
+    transform: scaleY(1);
+    transform-origin: top;
+    opacity: 1;
+  }
+  70% {
+    transform: scaleY(1);
+    transform-origin: bottom;
+    opacity: 1;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+    opacity: 0;
+  }
+}
+.cue-line {
+  width: 1px;
+  height: 44px;
+  background: linear-gradient(180deg, rgba(217, 230, 255, 0.1), #d9e6ff);
+  box-shadow: 0 0 12px rgba(217, 230, 255, 0.6);
+  animation: cue-drop 2.2s var(--ease-inout) infinite;
+}
+@keyframes cue-dot {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(6px);
+  }
+}
+.cue-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #f3ecdd;
+  box-shadow: 0 0 14px rgba(217, 230, 255, 0.8);
+  animation: cue-dot 2.2s var(--ease-inout) infinite;
+}
+
+/* The egg's speech: one line at a time, never stacked. */
+.egg-speech {
+  white-space: nowrap;
+  text-shadow: 0 1px 12px rgba(6, 11, 28, 0.9);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mark-ring,
   .lamp-glow,
-  .haze {
+  .haze,
+  .cue-line,
+  .cue-dot {
     animation: none !important;
   }
 }

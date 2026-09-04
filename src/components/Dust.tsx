@@ -51,10 +51,7 @@ export function Dust({ active }: { active: boolean }) {
         m.x += m.vx * dt;
         m.y += m.vy * dt;
         m.ph += dt * 0.0006;
-        if (m.y < -0.02) {
-          m.y = 1.02;
-          m.x = Math.random();
-        }
+        if (m.y < -0.02) m.y = 1.02;
         if (m.x < -0.02) m.x = 1.02;
         if (m.x > 1.02) m.x = -0.02;
         // brighter toward the lamp side (left-lower)
@@ -81,6 +78,7 @@ export function Dust({ active }: { active: boolean }) {
     };
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("resize", resize);
+
     return () => {
       running = false;
       cancelAnimationFrame(raf);
@@ -90,12 +88,5 @@ export function Dust({ active }: { active: boolean }) {
     };
   }, [active, reduce]);
 
-  return (
-    <canvas
-      ref={ref}
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 h-full w-full transition-opacity duration-1000"
-      style={{ opacity: active ? 1 : 0 }}
-    />
-  );
+  return <canvas ref={ref} aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full" />;
 }

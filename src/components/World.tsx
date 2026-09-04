@@ -1,125 +1,137 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import roomImg from "../assets/room.jpg";
-import { copy, hotspots, type Hotspot, type HotspotId } from "../content/egginaya";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion, useMotionValue, useSpring } from "motion/react";
+import { roomImg } from "../lib/assets";
+import { copy, eggLines, eggLoopFrom, envelopeWhisper, hotspots, type Hotspot, type HotspotId } from "../content/egginaya";
 import { cine, useIsTouch, useViewport } from "../lib/hooks";
 import { cn } from "../utils/cn";
 import { Dust } from "./Dust";
 
-export type WorldPhase = "arrival" | "world" | "focused";
+const EGG_COOLDOWN = 650; // ms between pokes that register
+const EGG_LINGER = 2600; // ms a line stays before fading
 
-interface Props {
-  phase: WorldPhase;
-  focus: HotspotId | null;
+export function World({
+  visited,
+  envelopeUnlocked,
+  active,
+  onOpen,
+}: {
   visited: HotspotId[];
   envelopeUnlocked: boolean;
-  eggLine: string | null;
+  /** false while a scene is open on top: hides UI and pauses dust */
+  active: boolean;
   onOpen: (id: HotspotId) => void;
-}
-
-export function World({ phase, focus, visited, envelopeUnlocked, eggLine, onOpen }: Props) {
-  const { w: cw, h: ch } = useViewport();
+}) {
   const touch = useIsTouch();
-  const reduce = useReducedMotion();
+  const { w: vw, h: vh } = useViewport();
   const [aspect, setAspect] = useState(16 / 9);
   const [loaded, setLoaded] = useState(false);
+  const [zoomTo, setZoomTo] = useState<Hotspot | null>(null);
 
-  // Cover geometry
-  const stageW = Math.max(cw, ch * aspect);
-  const stageH = stageW / aspect;
-  const baseY = (ch - stageH) / 2;
-  const minX = cw - stageW;
+  /* ---------- Camera ---------- */
+  const room = useMemo(() => {
+    // Cover the viewport, and leave a little extra room to look around on desktop.
+    const extra = touch ? 1.18 : 1.1;
+    let w = vw * extra;
+    let h = w / aspect;
+    if (h < vh * extra) {
+      h = vh * extra;
+      w = h * aspect;
+    }
+    return { w, h };
+  }, [vw, vh, aspect, touch]);
 
-  // Pan (touch) and parallax (pointer)
-  const [pan, setPan] = useState<number | null>(null);
-  const [par, setPar] = useState({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState(false);
-  const dragRef = useRef<{ startX: number; startPan: number; moved: boolean } | null>(null);
-  const movedRef = useRef(false);
-  const rafRef = useRef(0);
+  const rangeX = Math.max(0, room.w - vw);
+  const rangeY = Math.max(0, room.h - vh);
 
-  // Start the camera a little toward the desk on narrow screens so the first view has the lamp in it.
-  const panX = useMemo(() => {
-    if (pan !== null) return Math.min(0, Math.max(minX, pan));
-    const desired = cw / 2 - 0.36 * stageW;
-    return Math.min(0, Math.max(minX, desired));
-  }, [pan, minX, cw, stageW]);
+  const panX = useMotionValue(-rangeX / 2);
+  const panY = useMotionValue(-rangeY / 2);
+  const sx = useSpring(panX, { stiffness: 40, damping: 18, mass: 1.2 });
+  const sy = useSpring(panY, { stiffness: 40, damping: 18, mass: 1.2 });
 
   useEffect(() => {
-    if (touch || reduce) return;
+    panX.set(-rangeX / 2);
+    panY.set(-rangeY / 2);
+  }, [rangeX, rangeY, panX, panY]);
+
+  const clamp = useCallback(
+    (x: number, y: number) => {
+      panX.set(Math.min(0, Math.max(-rangeX, x)));
+      panY.set(Math.min(0, Math.max(-rangeY, y)));
+    },
+    [panX, panY, rangeX, rangeY]
+  );
+
+  // Desktop: the room turns gently toward the cursor.
+  useEffect(() => {
+    if (touch || zoomTo) return;
     const onMove = (e: PointerEvent) => {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => {
-        setPar({ x: (e.clientX / cw - 0.5) * 2, y: (e.clientY / ch - 0.5) * 2 });
-      });
+      const nx = e.clientX / vw - 0.5;
+      const ny = e.clientY / vh - 0.5;
+      clamp(-rangeX / 2 - nx * rangeX * 0.9, -rangeY / 2 - ny * rangeY * 0.9);
     };
-    window.addEventListener("pointermove", onMove, { passive: true });
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      cancelAnimationFrame(rafRef.current);
-    };
-  }, [touch, reduce, cw, ch]);
+    window.addEventListener("pointermove", onMove);
+    return () => window.removeEventListener("pointermove", onMove);
+  }, [touch, vw, vh, rangeX, rangeY, clamp, zoomTo]);
 
-  // Camera
-  const focused = phase === "focused" && focus;
-  const target = focused ? hotspots.find((h) => h.id === focus) : undefined;
-
-  let s = 1;
-  let tx = panX;
-  let ty = baseY;
-  if (phase === "arrival") {
-    s = 1.1;
-    tx = panX - (stageW * 0.1) / 2;
-    ty = baseY - (stageH * 0.1) / 2;
-  } else if (target && target.zoom > 1) {
-    s = target.zoom;
-    tx = cw / 2 - (target.x / 100) * stageW * s;
-    ty = ch / 2 - (target.y / 100) * stageH * s;
-  } else {
-    tx = panX + (touch ? 0 : par.x * -14);
-    ty = baseY + (touch ? 0 : par.y * -8);
-  }
-
-  const filter =
-    phase === "arrival"
-      ? "brightness(0.32) saturate(0.85) blur(3px)"
-      : focused
-        ? "brightness(0.55) saturate(0.9) blur(1.5px)"
-        : "brightness(1) saturate(1) blur(0px)";
-
-  const transition = dragging
-    ? "none"
-    : reduce
-      ? "none"
-      : phase === "arrival" || focused
-        ? "transform 1.7s cubic-bezier(0.65,0,0.35,1), filter 1.7s cubic-bezier(0.65,0,0.35,1)"
-        : "transform 1.6s cubic-bezier(0.16,1,0.3,1), filter 1.6s cubic-bezier(0.16,1,0.3,1)";
-
-  // Touch drag to look around
-  const canDrag = touch && phase === "world" && stageW > cw + 4;
+  // Touch: drag to turn.
+  const dragRef = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
+  const movedRef = useRef(false);
   const onPointerDown = (e: React.PointerEvent) => {
-    if (!canDrag) return;
-    dragRef.current = { startX: e.clientX, startPan: panX, moved: false };
+    if (!touch) return;
+    dragRef.current = { x: e.clientX, y: e.clientY, px: panX.get(), py: panY.get() };
     movedRef.current = false;
   };
   const onPointerMove = (e: React.PointerEvent) => {
     const d = dragRef.current;
     if (!d) return;
-    const dx = e.clientX - d.startX;
-    if (!d.moved && Math.abs(dx) > 6) {
-      d.moved = true;
-      movedRef.current = true;
-      setDragging(true);
-    }
-    if (d.moved) setPan(d.startPan + dx);
+    const dx = e.clientX - d.x;
+    const dy = e.clientY - d.y;
+    if (Math.hypot(dx, dy) > 6) movedRef.current = true;
+    clamp(d.px + dx, d.py + dy);
   };
   const onPointerUp = () => {
     dragRef.current = null;
-    setDragging(false);
   };
 
-  const hintText = touch && stageW > cw + 4 ? copy.world.hintTouch : copy.world.hint;
-  const showUI = phase === "world";
+  /* ---------- The egg speaks: one line at a time ---------- */
+  const [egg, setEgg] = useState<{ tick: number; line: string } | null>(null);
+  const eggIndex = useRef(0);
+  const eggLast = useRef(0);
+  const eggTimer = useRef<number | null>(null);
+
+  const pokeEgg = useCallback(() => {
+    const now = performance.now();
+    if (now - eggLast.current < EGG_COOLDOWN) return; // ignore machine-gun taps
+    eggLast.current = now;
+
+    const i = eggIndex.current;
+    const line = eggLines[i];
+    eggIndex.current = i + 1 >= eggLines.length ? eggLoopFrom : i + 1;
+
+    setEgg({ tick: now, line });
+    if (eggTimer.current) window.clearTimeout(eggTimer.current);
+    eggTimer.current = window.setTimeout(() => setEgg(null), EGG_LINGER);
+  }, []);
+
+  useEffect(() => () => {
+    if (eggTimer.current) window.clearTimeout(eggTimer.current);
+  }, []);
+
+  /* ---------- Opening something ---------- */
+  const open = (h: Hotspot) => {
+    if (movedRef.current) return;
+    if (h.id === "egg") return pokeEgg();
+    if (zoomTo) return;
+    setZoomTo(h);
+    window.setTimeout(() => onOpen(h.id), 780);
+  };
+
+  useEffect(() => {
+    if (active) setZoomTo(null);
+  }, [active]);
+
+  const showUI = loaded && active && !zoomTo;
+  const hintText = touch ? copy.world.hintTouch : copy.world.hint;
 
   return (
     <div
@@ -128,23 +140,25 @@ export function World({ phase, focus, visited, envelopeUnlocked, eggLine, onOpen
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-      style={{ touchAction: canDrag ? "none" : "auto", cursor: canDrag ? (dragging ? "grabbing" : "grab") : "default" }}
+      style={{ touchAction: "none" }}
     >
-      {/* Stage: everything inside moves with the camera */}
-      <div
+      {/* The room */}
+      <motion.div
         className="absolute left-0 top-0 will-change-transform"
         style={{
-          width: stageW,
-          height: stageH,
-          transform: `translate3d(${tx}px, ${ty}px, 0) scale(${s})`,
-          transformOrigin: "0 0",
-          transition,
-          filter,
+          width: room.w,
+          height: room.h,
+          x: sx,
+          y: sy,
+          transformOrigin: zoomTo ? `${zoomTo.x}% ${zoomTo.y}%` : "50% 50%",
         }}
+        animate={{ scale: zoomTo ? zoomTo.zoom : 1, filter: zoomTo ? "brightness(0.55) blur(2px)" : "brightness(1) blur(0px)" }}
+        transition={{ duration: 1.1, ease: cine }}
       >
         <img
           src={roomImg}
-          alt="A small room with a desk, a pinboard, a shelf and a very large window opening onto a blue night."
+          alt=""
+          aria-hidden="true"
           draggable={false}
           onLoad={(e) => {
             const el = e.currentTarget;
@@ -155,18 +169,8 @@ export function World({ phase, focus, visited, envelopeUnlocked, eggLine, onOpen
         />
 
         {/* Light layers. Blended into the render rather than drawn on top of it. */}
-        <div
-          className="lamp-glow pointer-events-none absolute inset-0 mix-blend-screen"
-          style={{
-            background: "radial-gradient(28% 32% at 22% 56%, rgba(240,183,122,0.55), rgba(240,183,122,0.12) 45%, transparent 70%)",
-          }}
-        />
-        <div
-          className={cn("pointer-events-none absolute -inset-[6%] mix-blend-screen opacity-60", !reduce && "haze")}
-          style={{
-            background: "radial-gradient(38% 42% at 60% 40%, rgba(127,163,232,0.22), transparent 70%)",
-          }}
-        />
+        <div className="lamp-glow pointer-events-none absolute inset-0 mix-blend-soft-light [background:radial-gradient(38%_42%_at_22%_58%,rgba(240,183,122,0.75),transparent_70%)]" />
+        <div className="haze pointer-events-none absolute -inset-[6%] mix-blend-screen opacity-30 [background:radial-gradient(50%_40%_at_60%_36%,rgba(127,163,232,0.35),transparent_70%)]" />
 
         {/* Hotspots */}
         <AnimatePresence>
@@ -179,27 +183,18 @@ export function World({ phase, focus, visited, envelopeUnlocked, eggLine, onOpen
                 touch={touch}
                 visited={visited.includes(h.id)}
                 locked={h.id === "envelope" && !envelopeUnlocked}
-                eggLine={h.id === "egg" ? eggLine : null}
-                onOpen={() => {
-                  if (movedRef.current) return;
-                  onOpen(h.id);
-                }}
+                eggLine={h.id === "egg" ? egg : null}
+                onOpen={() => open(h)}
               />
             ))}
         </AnimatePresence>
-      </div>
+      </motion.div>
 
       {/* Air */}
-      <Dust active={phase !== "arrival" && !focused} />
+      <Dust active={active && loaded} />
 
       {/* Vignette and grain sit on the lens, not in the room */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(6,11,28,0.55) 100%), linear-gradient(180deg, rgba(6,11,28,0.35) 0%, transparent 18%, transparent 80%, rgba(6,11,28,0.55) 100%)",
-        }}
-      />
+      <div className="pointer-events-none absolute inset-0 [background:radial-gradient(120%_100%_at_50%_50%,transparent_45%,rgba(6,11,28,0.7)_100%)]" />
       <div className="grain" />
 
       {/* World chrome: minimal */}
@@ -209,19 +204,21 @@ export function World({ phase, focus, visited, envelopeUnlocked, eggLine, onOpen
             key="chrome"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1, delay: 0.6, ease: cine }}
-            className="pointer-events-none absolute inset-0"
+            exit={{ opacity: 0, transition: { duration: 0.4 } }}
+            transition={{ duration: 1.2, delay: 0.8 }}
+            className="pointer-events-none absolute inset-0 z-20"
           >
-            <p className="absolute left-5 top-6 font-display text-[15px] italic leading-none text-ivory/55 md:left-8 md:top-7">{copy.world.corner}</p>
-            <p className="absolute right-5 top-6 max-w-[42vw] text-right text-[12px] font-normal leading-snug tracking-wide text-ivory/45 md:right-8 md:top-7">
+            <p className="absolute left-[max(1.25rem,env(safe-area-inset-left))] top-[max(1.25rem,env(safe-area-inset-top))] font-display text-[15px] italic text-ivory/55">
+              {copy.world.corner}
+            </p>
+            <p className="absolute right-[max(1.25rem,env(safe-area-inset-right))] top-[max(1.25rem,env(safe-area-inset-top))] max-w-[240px] text-right text-[12.5px] leading-relaxed tracking-wide text-ivory/50 md:max-w-[300px]">
               {hintText}
             </p>
 
             {/* Places index: a guaranteed path for touch, and a quiet map for everyone. */}
             <nav
               aria-label="Places in the room"
-              className="pointer-events-auto absolute inset-x-0 bottom-0 flex flex-wrap justify-center gap-x-6 gap-y-0 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6 md:gap-x-9 md:pb-7"
+              className="pointer-events-auto absolute inset-x-0 bottom-[max(1.1rem,env(safe-area-inset-bottom))] flex flex-wrap items-center justify-center gap-x-6 gap-y-2 px-6"
             >
               {hotspots
                 .filter((h) => !h.quiet)
@@ -232,16 +229,17 @@ export function World({ phase, focus, visited, envelopeUnlocked, eggLine, onOpen
                     <button
                       key={h.id}
                       type="button"
-                      onClick={() => onOpen(h.id)}
+                      onClick={() => open(h)}
                       className={cn(
-                        "group flex min-h-11 items-center gap-2 font-display text-[16px] italic transition-colors duration-500 md:text-[17px]",
-                        locked ? "text-ivory/35" : seen ? "text-ivory/55 hover:text-ivory/90" : "text-ivory/85 hover:text-ivory"
+                        "flex min-h-9 items-center gap-2 font-display text-[15px] italic transition-colors",
+                        seen ? "text-blue/70 hover:text-blue" : "text-ivory/70 hover:text-ivory",
+                        locked && "text-ivory/40"
                       )}
                     >
                       <span
                         className={cn(
-                          "block h-[5px] w-[5px] rounded-full transition-colors duration-500",
-                          seen ? "bg-blue" : locked ? "bg-ivory/20" : "bg-ivory/70"
+                          "inline-block h-1.5 w-1.5 rounded-full",
+                          seen ? "bg-blue/80" : locked ? "bg-ivory/30" : "bg-ivory shadow-[0_0_10px_rgba(217,230,255,0.7)]"
                         )}
                       />
                       {h.label}
@@ -270,13 +268,14 @@ function HotspotMark({
   touch: boolean;
   visited: boolean;
   locked: boolean;
-  eggLine: string | null;
+  eggLine: { tick: number; line: string } | null;
   onOpen: () => void;
 }) {
   const [hover, setHover] = useState(false);
-  const whisper = h.id === "envelope" ? (locked ? "not yet" : "open it") : h.whisper;
-  const showLabel = !h.quiet && (touch || hover || visited === false);
+  const whisper = h.id === "envelope" ? (locked ? envelopeWhisper.locked : envelopeWhisper.open) : h.whisper;
+  const showLabel = touch || hover || (!visited && !h.quiet);
   const flipLabel = h.x > 70; // keep labels inside the frame on the right side
+  const talking = h.id === "egg" && !!eggLine;
 
   return (
     <motion.button
@@ -291,7 +290,7 @@ function HotspotMark({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       transition={{ duration: 0.9, delay: 0.5 + index * 0.08, ease: cine }}
-      className={cn("hotspot absolute z-10 -translate-x-1/2 -translate-y-1/2 outline-offset-8", h.quiet && "opacity-90")}
+      className={cn("hotspot absolute z-10 -translate-x-1/2 -translate-y-1/2 outline-offset-8")}
       style={{ left: `${h.x}%`, top: `${h.y}%` }}
     >
       <span className={cn("mark", visited && "mark-visited", h.quiet && "mark-quiet")}>
@@ -299,39 +298,41 @@ function HotspotMark({
         <span className="mark-dot" />
       </span>
 
-      {/* Label */}
-      <span
-        className={cn(
-          "pointer-events-none absolute top-1/2 flex -translate-y-1/2 flex-col whitespace-nowrap text-left transition-opacity duration-500",
-          flipLabel ? "right-full items-end pr-1 text-right" : "left-full pl-1",
-          showLabel || (h.quiet && hover) ? "opacity-100" : "opacity-0"
-        )}
-      >
-        <span className="font-display text-[17px] italic leading-none text-ivory drop-shadow-[0_1px_8px_rgba(6,11,28,0.9)]">{h.label}</span>
-        {whisper && (
-          <span
-            className={cn(
-              "mt-1 text-[11px] font-normal tracking-wide text-ivory/60 transition-opacity duration-500 drop-shadow-[0_1px_6px_rgba(6,11,28,0.9)]",
-              hover ? "opacity-100" : "opacity-0"
-            )}
-          >
-            {whisper}
-          </span>
-        )}
-      </span>
-
-      {/* The egg speaks, briefly */}
+      {/* Label: hidden while the egg is talking so the two never collide */}
       <AnimatePresence>
-        {eggLine && (
+        {showLabel && !talking && (
           <motion.span
-            key={eggLine}
+            key="label"
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, y: 2 }}
             transition={{ duration: 0.5, ease: cine }}
-            className="pointer-events-none absolute right-full top-1/2 -translate-y-1/2 whitespace-nowrap pr-2 font-display text-[18px] italic text-ivory drop-shadow-[0_1px_8px_rgba(6,11,28,0.9)]"
+            className={cn(
+              "pointer-events-none absolute top-1/2 flex -translate-y-1/2 flex-col whitespace-nowrap",
+              flipLabel ? "right-full mr-1 items-end text-right" : "left-full ml-1 items-start text-left"
+            )}
           >
-            {eggLine}
+            <span className="font-display text-[19px] italic leading-none text-ivory drop-shadow-[0_1px_8px_rgba(6,11,28,0.9)]">{h.label}</span>
+            {whisper && <span className="mt-1.5 text-[11.5px] tracking-wide text-ivory/55 drop-shadow-[0_1px_6px_rgba(6,11,28,0.9)]">{whisper}</span>}
+          </motion.span>
+        )}
+      </AnimatePresence>
+
+      {/* The egg speaks, one line at a time. `mode="wait"` means the old line is gone before the new one arrives. */}
+      <AnimatePresence mode="wait">
+        {eggLine && (
+          <motion.span
+            key={eggLine.tick}
+            initial={{ opacity: 0, y: 6, filter: "blur(4px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, y: -4, filter: "blur(4px)", transition: { duration: 0.22 } }}
+            transition={{ duration: 0.45, ease: cine }}
+            className={cn(
+              "egg-speech pointer-events-none absolute top-1/2 -translate-y-1/2 font-display text-[19px] italic leading-none text-ivory",
+              flipLabel ? "right-full mr-1 text-right" : "left-full ml-1 text-left"
+            )}
+          >
+            {eggLine.line}
           </motion.span>
         )}
       </AnimatePresence>
