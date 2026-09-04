@@ -466,9 +466,9 @@ button {
   transition: transform 0.9s var(--ease-cine);
   pointer-events: none;
 }
-.sheen:hover::after {
+/*.sheen:hover::after {
   transform: translateX(120%);
-}
+}*/
 @media (prefers-reduced-motion: reduce) {
   .mark-ring,
   .mark-dot,
