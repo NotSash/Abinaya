@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 
 /** Slow drifting dust motes over the room. Paused when a scene is open. */
 export function Dust({ active }: { active: boolean }) {
-  const ref = useRef<HTMLCanvasElement>(null);
+  const ref = useRef<HTMLCanvasElement | null>(null);
   const activeRef = useRef(active);
   activeRef.current = active;
 

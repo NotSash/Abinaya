@@ -11,11 +11,15 @@ const svg = (body: string, size: number) =>
 
 export const textures = {
   grain: svg(
-    `<filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#n)"/>`,
+    `<filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+    <rect width="100%" height="100%" filter="url(#n)"/>`,
     160
   ),
   paper: svg(
-    `<filter id="p"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope="0.08"/></feComponentTransfer></filter><rect width="100%" height="100%" filter="url(#p)"/>`,
+    `<filter id="p"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="5" seed="7" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope="0.10"/></feComponentTransfer></filter>
+    <filter id="f"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope="0.05"/></feComponentTransfer></filter>
+    <rect width="100%" height="100%" filter="url(#p)"/>
+    <rect width="100%" height="100%" filter="url(#f)"/>`,
     200
   ),
 };

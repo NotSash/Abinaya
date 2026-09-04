@@ -14,7 +14,7 @@ export function SystemOS({ onBack, onGoEnvelope }: { onBack: () => void; onGoEnv
   const [seen, setSeen] = useState<Section[]>(["profile"]);
   const [canScroll, setCanScroll] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEscape(onBack);
 
@@ -116,7 +116,7 @@ export function SystemOS({ onBack, onGoEnvelope }: { onBack: () => void; onGoEnv
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6, transition: { duration: 0.25 } }}
                   transition={{ duration: 0.7, ease: cine }}
-                  className="mx-auto max-w-[640px] pb-16"
+                  className="mx-auto max-w-[640px] pb-28"
                 >
                   {section === "profile" && <Profile />}
                   {section === "incident" && <Incident />}
@@ -166,23 +166,35 @@ function Profile() {
         <Kicker>diagnostics</Kicker>
       </div>
       <div className="mt-4 space-y-5">
-        {p.diagnostics.map((d, i) => (
-          <div key={d.key}>
-            <div className="flex items-baseline justify-between font-mono text-[12px]">
-              <span className="text-ivory/85">{d.key}</span>
-              <span className="text-ice">{d.value}</span>
+        {p.diagnostics.map((d, i) => {
+          const infinite = d.value === "∞";
+          return (
+            <div key={d.key}>
+              <div className="flex items-baseline justify-between font-mono text-[12px]">
+                <span className="text-ivory/85">{d.key}</span>
+                {/* The infinity glyph is tiny in the mono font, so it borrows the display face and is sized to match the other numbers. */}
+                <span
+                  className={cn(
+                    "text-ice",
+                    infinite && "font-display text-[24px] font-semibold leading-none [transform:translateY(3px)] md:text-[26px]"
+                  )}
+                  aria-label={infinite ? "infinite" : undefined}
+                >
+                  {d.value}
+                </span>
+              </div>
+              <div className="mt-2 h-[3px] w-full overflow-hidden rounded-full bg-ice/10">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(1.5, d.ratio * 100)}%` }}
+                  transition={{ duration: 1.4, delay: 0.3 + i * 0.12, ease: cine }}
+                  className={cn("h-full rounded-full", d.ratio === 0 ? "bg-gold/80" : "bg-blue")}
+                />
+              </div>
+              {d.note && <p className="mt-1.5 text-[12.5px] italic text-ice/55">{d.note}</p>}
             </div>
-            <div className="mt-2 h-[3px] w-full overflow-hidden rounded-full bg-ice/10">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.max(1.5, d.ratio * 100)}%` }}
-                transition={{ duration: 1.4, delay: 0.3 + i * 0.12, ease: cine }}
-                className={cn("h-full rounded-full", d.ratio === 0 ? "bg-gold/80" : "bg-blue")}
-              />
-            </div>
-            {d.note && <p className="mt-1.5 text-[12.5px] italic text-ice/55">{d.note}</p>}
-          </div>
-        ))}
+          );
+        })}
       </div>
       <p className="mt-10 font-mono text-[11px] text-ice/40">{p.footer}</p>
     </div>
@@ -269,37 +281,37 @@ function Marriage() {
           ))}
         </dl>
 
-        <div className="mt-8 font-mono text-[10px] uppercase tracking-[0.3em] text-night/50">how it happened</div>
-        <div className="mt-3 space-y-3 text-[15px] leading-[1.7] text-night/90">
+        <div className="mt-8 font-mono text-[10px] uppercase tracking-[0.32em] text-night/50">how it happened</div>
+        <div className="mt-3 space-y-3 text-[14.5px] leading-[1.7] text-night/85">
           {m.story.map((p) => (
             <p key={p}>{p}</p>
           ))}
         </div>
 
-        <div className="mt-8 font-mono text-[10px] uppercase tracking-[0.3em] text-night/50">terms &amp; conditions</div>
-        <ol className="mt-3 space-y-2 text-[14.5px] leading-[1.65] text-night/85">
+        <div className="mt-8 font-mono text-[10px] uppercase tracking-[0.32em] text-night/50">terms &amp; conditions</div>
+        <ul className="mt-3 space-y-2 text-[14px] leading-[1.65] text-night/85">
           {m.terms.map((t, i) => (
             <li key={t} className="flex gap-3">
-              <span className="font-mono text-[11px] text-night/50">{String(i + 1).padStart(2, "0")}</span>
+              <span className="font-mono text-[11px] text-night/45">{String(i + 1).padStart(2, "0")}</span>
               <span>{t}</span>
             </li>
           ))}
-        </ol>
+        </ul>
 
         <div className="mt-10 grid grid-cols-2 gap-8">
           <div>
-            <div className="font-display text-[26px] italic text-night/85">Abinaya</div>
-            <div className="mt-1 h-px bg-night/40" />
-            <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.3em] text-night/50">her</div>
+            <div className="font-display text-[22px] italic text-night/85">Abinaya</div>
+            <div className="mt-1 h-px bg-night/30" />
+            <div className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.25em] text-night/50">her</div>
           </div>
           <div>
-            <div className="font-display text-[26px] italic text-night/85">{m.between[1]}</div>
-            <div className="mt-1 h-px bg-night/40" />
-            <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.3em] text-night/50">him</div>
+            <div className="font-display text-[22px] italic text-night/85">{m.between[1]}</div>
+            <div className="mt-1 h-px bg-night/30" />
+            <div className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.25em] text-night/50">him</div>
           </div>
         </div>
 
-        <p className="mt-8 text-[12px] italic leading-[1.6] text-night/60">{m.footnote}</p>
+        <p className="mt-8 text-[12px] italic leading-[1.6] text-night/55">{m.footnote}</p>
       </div>
 
       <div className="mt-10">
@@ -307,7 +319,7 @@ function Marriage() {
       </div>
       <Evidence
         src={media.marriageScreenshot}
-        alt="Screenshot of the signed Instagram Marriage Association message"
+        alt="Screenshot of the signed Instagram Marriage Association agreement"
         caption={m.evidenceCaption}
         missing={m.evidenceMissing}
       />
@@ -320,15 +332,25 @@ function MediaFiles() {
     <div>
       <Kicker>media / read only</Kicker>
       <Title>{system.mediaHeading}</Title>
-      <ul className="mt-8 divide-y divide-ice/8 font-mono text-[12.5px]">
-        {system.mediaFiles.map((f) => (
-          <li key={f.name} className="flex items-baseline justify-between gap-4 py-3">
-            <span className="text-ivory/90">{f.name}</span>
-            <span className="text-right text-ice/45">
-              {f.meta}
-              {f.note && <span className="text-ice/35"> · {f.note}</span>}
-            </span>
-          </li>
+      <ul className="mt-8 divide-y divide-ice/8">
+        {system.mediaFiles.map((f, i) => (
+          <motion.li
+            key={f.name}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15 + i * 0.07, ease: cine }}
+            className="py-5"
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 font-mono text-[12.5px]">
+              <span className="text-ivory">
+                <span className="text-ice/35">media/</span>
+                {f.name}
+              </span>
+              <span className="text-[11px] text-ice/45">{f.meta}</span>
+            </div>
+            <div className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.28em] text-blue/80">{f.tag}</div>
+            <p className="mt-2 max-w-[560px] font-display text-[17.5px] italic leading-[1.45] text-ivory/85 md:text-[19px]">{f.note}</p>
+          </motion.li>
         ))}
       </ul>
       <p className="mt-8 font-mono text-[11px] text-ice/40">{system.mediaFooter}</p>
@@ -338,10 +360,10 @@ function MediaFiles() {
 
 function Locked({ onGo }: { onGo: () => void }) {
   return (
-    <div className="flex min-h-[320px] flex-col items-start justify-center">
+    <div className="flex min-h-[380px] flex-col items-start justify-center">
       <Kicker>encrypted</Kicker>
-      <div className="mt-2 font-mono text-[18px] text-gold md:text-[22px]">{system.lockedFile.name}</div>
-      <p className="mt-5 max-w-[420px] font-display text-[22px] italic leading-[1.35] text-ivory/85">{system.lockedFile.line}</p>
+      <div className="mt-2 font-mono text-[18px] tracking-[0.06em] text-gold/90">{system.lockedFile.name}</div>
+      <p className="mt-6 max-w-[440px] font-display text-[26px] italic leading-[1.3] text-ivory/90 md:text-[30px]">{system.lockedFile.line}</p>
       <QuietButton onClick={onGo} className="mt-8">
         {system.lockedFile.button}
       </QuietButton>

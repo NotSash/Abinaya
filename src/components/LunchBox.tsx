@@ -3,9 +3,9 @@ import { lunchBox } from "../content/egginaya";
 import { cine, useEscape } from "../lib/hooks";
 import { BackToRoom, Kicker } from "./ui";
 
-/** The lunch box: a small steel tin, and the memory that lives in it. */
 export function LunchBox({ onBack }: { onBack: () => void }) {
   useEscape(onBack);
+
   return (
     <motion.div
       className="absolute inset-0 z-40 flex items-center justify-center bg-night/85 px-5 backdrop-blur-[3px]"
@@ -27,7 +27,7 @@ export function LunchBox({ onBack }: { onBack: () => void }) {
       >
         {/* Lid */}
         <div className="absolute -top-3 left-4 right-4 h-6 rounded-t-[10px] bg-[linear-gradient(180deg,#9aa4b8,#5a6478)] shadow-[0_-4px_14px_rgba(0,0,0,0.4)]" />
-        {/* Tin */}
+        {/* Box */}
         <div className="scroll-area relative max-h-[78vh] rounded-[10px] border border-white/10 bg-[linear-gradient(160deg,#6f7a92,#3d4560_60%,#2b3149)] p-1.5 shadow-[0_40px_100px_rgba(0,0,0,0.6)]">
           <div className="paper rounded-[7px] px-6 py-8 md:px-10 md:py-10">
             <Kicker className="text-night/50">{lunchBox.kicker}</Kicker>

@@ -14,6 +14,7 @@ import { QuietButton } from "./components/ui";
 type Scene = "arrival" | "world";
 
 export default function App() {
+  // Every visit begins at the door. Nothing is remembered between refreshes.
   const [scene, setScene] = useState<Scene>("arrival");
   const [open, setOpen] = useState<HotspotId | null>(null);
   const { visited, mark } = useVisited();
@@ -23,7 +24,11 @@ export default function App() {
 
   const openPlace = useCallback(
     (id: HotspotId) => {
-      if (id === "egg") return;
+      if (id === "egg") {
+        // The egg doesn't open anything, but poking it counts as finding it.
+        mark("egg");
+        return;
+      }
       setOpen(id);
       if (id !== "envelope") mark(id);
     },

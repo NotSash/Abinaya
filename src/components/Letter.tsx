@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { about, envelopeRequires, envelopeWhisper, facts, finalMessage, hotspots, media, type HotspotId } from "../content/egginaya";
+import {
+  about,
+  discoverable,
+  envelopeRequires,
+  envelopeWhisper,
+  facts,
+  finalMessage,
+  hotspots,
+  media,
+  type HotspotId,
+} from "../content/egginaya";
 import { cine, useEscape } from "../lib/hooks";
 import { cn } from "../utils/cn";
 import { BackToRoom, Kicker, QuietButton, ScrollCue } from "./ui";
@@ -18,7 +28,7 @@ export function Letter({ unlocked, visited, onBack }: { unlocked: boolean; visit
     window.setTimeout(() => setStage("letter"), 1500);
   };
 
-  if (!unlocked) return <Locked visited={visited} onBack={onBack} />;
+  if (!unlocked) return <LockedNotice visited={visited} onBack={onBack} />;
 
   return (
     <div className="absolute inset-0 overflow-hidden bg-night">
@@ -35,9 +45,7 @@ export function Letter({ unlocked, visited, onBack }: { unlocked: boolean; visit
             <BackToRoom onClick={onBack} />
             <div className="pointer-events-none absolute inset-0 [background:radial-gradient(50%_40%_at_50%_55%,rgba(47,107,255,0.28),transparent_70%)]" />
             <div className="grain" />
-
             <Envelope opening={opening} onOpen={open} />
-
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: opening ? 0 : 1 }}
@@ -55,13 +63,16 @@ export function Letter({ unlocked, visited, onBack }: { unlocked: boolean; visit
   );
 }
 
-/* ---------- Locked state ---------- */
+/* ---------- Not yet ---------- */
 
-function Locked({ visited, onBack }: { visited: HotspotId[]; onBack: () => void }) {
-  const remaining = envelopeRequires.filter((id) => !visited.includes(id));
+function LockedNotice({ visited, onBack }: { visited: HotspotId[]; onBack: () => void }) {
+  const total = envelopeRequires.length;
+  const found = envelopeRequires.filter((id) => visited.includes(id)).length;
+  const missing = envelopeRequires.filter((id) => !visited.includes(id));
+
   return (
     <motion.div
-      className="absolute inset-0 flex items-center justify-center bg-night/85 px-6 backdrop-blur-[3px]"
+      className="absolute inset-0 flex items-center justify-center bg-night/85 px-5 backdrop-blur-[4px]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -69,29 +80,124 @@ function Locked({ visited, onBack }: { visited: HotspotId[]; onBack: () => void 
       onClick={onBack}
     >
       <BackToRoom onClick={onBack} />
+      <div className="pointer-events-none absolute inset-0 [background:radial-gradient(45%_40%_at_50%_50%,rgba(47,107,255,0.22),transparent_70%)]" />
       <div className="grain" />
-      <div className="max-w-[440px] text-center" onClick={(e) => e.stopPropagation()}>
-        <div className="mx-auto h-16 w-24 rounded-[4px] border border-blue/60 bg-blue/20 shadow-[0_0_40px_rgba(47,107,255,0.35)]" />
-        <p className="mt-8 font-display text-[26px] italic leading-[1.3] text-ivory md:text-[30px]">{envelopeWhisper.locked}.</p>
-        <p className="mt-4 text-[14px] leading-[1.7] text-ivory/60">
-          There are still a few things in the room I want you to see first:
-        </p>
-        <ul className="mt-3 flex flex-wrap justify-center gap-2">
-          {remaining.map((id) => (
-            <li key={id} className="rounded-full border border-ice/25 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.2em] text-ice/80">
-              {hotspots.find((h) => h.id === id)?.label}
-            </li>
-          ))}
-        </ul>
-        <QuietButton onClick={onBack} className="mt-10">
-          go look
-        </QuietButton>
+
+      <motion.div
+        initial={{ opacity: 0, y: 22, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 1, delay: 0.15, ease: cine }}
+        className="scroll-area relative max-h-[88vh] w-full max-w-[460px] overflow-hidden rounded-[16px] border border-ice/12 bg-[linear-gradient(180deg,rgba(12,22,54,0.96),rgba(6,11,28,0.98))] shadow-[0_40px_120px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(217,230,255,0.08)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* soft light from above */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-56 [background:radial-gradient(60%_70%_at_50%_0%,rgba(47,107,255,0.28),transparent_70%)]" />
+
+        <div className="relative px-7 pb-8 pt-9 text-center md:px-10 md:pb-10 md:pt-11">
+          <SealedEnvelope />
+
+          <div className="mt-7 font-mono text-[10px] uppercase tracking-[0.34em] text-ice/45">
+            sealed · {found}/{total} found
+          </div>
+
+          <p className="mt-3 text-balance font-display text-[28px] italic leading-[1.2] text-ivory md:text-[32px]">
+            {envelopeWhisper.locked}.
+          </p>
+          <p className="mx-auto mt-3 max-w-[320px] text-[13.5px] leading-[1.7] text-ivory/60">
+            There are still a few things in the room I want you to see first. The envelope opens once you've found all of them.
+          </p>
+
+          {/* progress */}
+          <div className="mx-auto mt-6 h-[3px] w-full max-w-[280px] overflow-hidden rounded-full bg-ice/10">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.max(2, (found / total) * 100)}%` }}
+              transition={{ duration: 1.2, delay: 0.5, ease: cine }}
+              className="h-full rounded-full bg-[linear-gradient(90deg,#2f6bff,#8fb3ff)] shadow-[0_0_12px_rgba(47,107,255,0.7)]"
+            />
+          </div>
+
+          {/* checklist */}
+          <ul className="mx-auto mt-6 w-full max-w-[300px] space-y-1.5 text-left">
+            {discoverable.map((id, i) => {
+              const h = hotspots.find((x) => x.id === id);
+              const done = visited.includes(id);
+              return (
+                <motion.li
+                  key={id}
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.7, delay: 0.45 + i * 0.08, ease: cine }}
+                  className={cn(
+                    "flex items-center gap-3 rounded-[8px] border px-3.5 py-2.5 transition-colors",
+                    done ? "border-ice/8 bg-ice/[0.03]" : "border-blue/30 bg-blue/[0.08]"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
+                      done ? "border-ice/30 bg-ice/20 text-ivory" : "border-ice/70 shadow-[0_0_10px_rgba(217,230,255,0.55)]"
+                    )}
+                  >
+                    {done && (
+                      <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" aria-hidden>
+                        <path d="M2 6.2 4.8 9 10 3.4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </span>
+                  <span
+                    className={cn(
+                      "font-mono text-[11px] uppercase tracking-[0.22em]",
+                      done ? "text-ice/40 line-through decoration-ice/30" : "text-ivory/90"
+                    )}
+                  >
+                    {h?.label ?? id}
+                  </span>
+                  <span className={cn("ml-auto font-display text-[13px] italic", done ? "text-ice/35" : "text-ice/70")}>
+                    {done ? "seen" : "waiting"}
+                  </span>
+                </motion.li>
+              );
+            })}
+          </ul>
+
+          <QuietButton onClick={onBack} className="mt-8">
+            {missing.length === 1 ? "one more to find" : "go look"}
+          </QuietButton>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/** A small sealed envelope for the locked notice. */
+function SealedEnvelope() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10, rotate: -4 }}
+      animate={{ opacity: 1, y: 0, rotate: -4 }}
+      transition={{ duration: 1.1, delay: 0.3, ease: cine }}
+      className="relative mx-auto h-[96px] w-[148px]"
+    >
+      <div className="absolute inset-0 overflow-hidden rounded-[5px] bg-[linear-gradient(160deg,#2f6bff,#1b3fb8)] shadow-[0_22px_50px_rgba(0,0,0,0.6),0_0_40px_rgba(47,107,255,0.25)]">
+        <div className="absolute inset-0 [background:linear-gradient(135deg,transparent_49%,rgba(255,255,255,0.08)_50%,transparent_51%),linear-gradient(225deg,transparent_49%,rgba(255,255,255,0.08)_50%,transparent_51%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-[62%] [clip-path:polygon(0_100%,100%_100%,100%_0,50%_55%,0_0)] bg-[linear-gradient(180deg,#3f7bff,#2a5fe6)]" />
+        <div className="absolute inset-x-0 top-0 h-[56%] [clip-path:polygon(0_0,100%_0,50%_100%)] bg-[linear-gradient(180deg,#5a8dff,#2f6bff)]" />
+        <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 font-mono text-[7px] uppercase tracking-[0.35em] text-white/60">
+          for Egginaya
+        </div>
+      </div>
+      {/* wax seal */}
+      <div className="seal-glow absolute left-1/2 top-[48%] flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[radial-gradient(circle_at_35%_30%,#fff0c2,#e8c98a_45%,#a8843f)] shadow-[0_2px_10px_rgba(0,0,0,0.35)]">
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 text-[#6b4e14]" aria-hidden>
+          <path d="M12 21s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.4-7 10-7 10Z" fill="currentColor" />
+        </svg>
       </div>
     </motion.div>
   );
 }
 
-/* ---------- Envelope ---------- */
+/* ---------- The envelope ---------- */
 
 function Envelope({ opening, onOpen }: { opening: boolean; onOpen: () => void }) {
   return (
@@ -105,7 +211,7 @@ function Envelope({ opening, onOpen }: { opening: boolean; onOpen: () => void })
       className="relative h-[190px] w-[290px] cursor-pointer md:h-[230px] md:w-[350px]"
       style={{ perspective: 900 }}
     >
-      {/* letter inside */}
+      {/* The letter inside */}
       <motion.div
         initial={false}
         animate={{ y: opening ? -120 : 0, opacity: opening ? 1 : 0 }}
@@ -119,19 +225,26 @@ function Envelope({ opening, onOpen }: { opening: boolean; onOpen: () => void })
           <div className="h-[2px] w-[78%] bg-night/15" />
         </div>
       </motion.div>
-      {/* body */}
+
+      {/* Body */}
       <div className="absolute inset-0 z-[2] overflow-hidden rounded-[6px] bg-[linear-gradient(160deg,#2f6bff,#1b3fb8)] shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
         <div className="absolute inset-0 [background:linear-gradient(135deg,transparent_49%,rgba(255,255,255,0.08)_50%,transparent_51%),linear-gradient(225deg,transparent_49%,rgba(255,255,255,0.08)_50%,transparent_51%)]" />
         <div className="absolute inset-x-0 bottom-0 h-[62%] [clip-path:polygon(0_100%,100%_100%,100%_0,50%_55%,0_0)] bg-[linear-gradient(180deg,#3f7bff,#2a5fe6)]" />
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 font-mono text-[10px] uppercase tracking-[0.35em] text-white/70">for Egginaya</div>
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 font-mono text-[10px] uppercase tracking-[0.35em] text-white/70">
+          for Egginaya
+        </div>
       </div>
-      {/* flap */}
+
+      {/* Flap */}
       <motion.div
         initial={false}
         animate={{ rotateX: opening ? -175 : 0 }}
         transition={{ duration: 1, ease: cine }}
         style={{ transformOrigin: "top", transformStyle: "preserve-3d" }}
-        className={cn("absolute inset-x-0 top-0 h-[58%] rounded-t-[6px] [clip-path:polygon(0_0,100%_0,50%_100%)] bg-[linear-gradient(180deg,#5a8dff,#2f6bff)]", opening ? "z-[0]" : "z-[3]")}
+        className={cn(
+          "absolute inset-x-0 top-0 h-[58%] rounded-t-[6px] [clip-path:polygon(0_0,100%_0,50%_100%)] bg-[linear-gradient(180deg,#5a8dff,#2f6bff)]",
+          opening ? "z-[0]" : "z-[3]"
+        )}
       >
         <div className="absolute left-1/2 top-[52%] h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/90 shadow-[0_2px_10px_rgba(0,0,0,0.35)]" />
       </motion.div>
@@ -139,19 +252,18 @@ function Envelope({ opening, onOpen }: { opening: boolean; onOpen: () => void })
   );
 }
 
-/* ---------- The letter itself ---------- */
+/* ---------- The letter ---------- */
 
 function LetterBody({ onBack }: { onBack: () => void }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const finalRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const finalRef = useRef<HTMLDivElement | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [reachedEnd, setReachedEnd] = useState(false);
-  const [showMore, setShowMore] = useState(false);
+  const [revealed, setRevealed] = useState(false);
 
-  // The song begins the moment the final part of the letter is on screen.
   useEffect(() => {
     const el = finalRef.current;
-    if (!el || !showMore) return;
+    if (!el || !revealed) return;
     const io = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
@@ -163,10 +275,10 @@ function LetterBody({ onBack }: { onBack: () => void }) {
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [showMore]);
+  }, [revealed]);
 
-  const continueToEnd = () => {
-    setShowMore(true);
+  const reveal = () => {
+    setRevealed(true);
     window.setTimeout(() => finalRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
 
@@ -179,11 +291,7 @@ function LetterBody({ onBack }: { onBack: () => void }) {
       transition={{ duration: 1, ease: cine }}
     >
       <BackToRoom onClick={onBack} tone="light" />
-      <div
-        ref={scrollRef}
-        onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 40)}
-        className="paper scroll-area absolute inset-0"
-      >
+      <div ref={scrollRef} onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 40)} className="paper scroll-area absolute inset-0">
         <div className="mx-auto max-w-[640px] px-6 pb-[max(6rem,env(safe-area-inset-bottom))] pt-[max(6rem,env(safe-area-inset-top))] md:px-8 md:pt-28">
           {/* About */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.2, delay: 0.3, ease: cine }}>
@@ -208,8 +316,8 @@ function LetterBody({ onBack }: { onBack: () => void }) {
             ))}
           </div>
 
-          {/* one more thing */}
-          {!showMore && (
+          {/* Reveal */}
+          {!revealed && (
             <motion.div
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
@@ -220,7 +328,7 @@ function LetterBody({ onBack }: { onBack: () => void }) {
               <p className="font-display text-[22px] italic text-night/60">{about.continue}</p>
               <button
                 type="button"
-                onClick={continueToEnd}
+                onClick={reveal}
                 className="group inline-flex min-h-12 items-center gap-3 rounded-full border border-night/25 px-7 font-mono text-[12px] uppercase tracking-[0.25em] text-night/80 transition-colors hover:border-night/60 hover:bg-night hover:text-ivory"
               >
                 <span className="h-1 w-1 rounded-full bg-night/60 transition-all duration-500 group-hover:w-4 group-hover:bg-ivory" />
@@ -229,11 +337,13 @@ function LetterBody({ onBack }: { onBack: () => void }) {
             </motion.div>
           )}
 
-          {/* The final message */}
-          {showMore && (
+          {/* Final message */}
+          {revealed && (
             <div ref={finalRef} className="mt-24 border-t border-night/10 pt-16">
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.2, ease: cine }}>
-                <Kicker className="text-night/50">{facts.birthday.day} {facts.birthday.month} · you're {facts.age}</Kicker>
+                <Kicker className="text-night/50">
+                  {facts.birthday.day} {facts.birthday.month} · you're {facts.age}
+                </Kicker>
                 <h2 className="mt-3 font-display text-[44px] leading-[1] text-night md:text-[60px]">{finalMessage.greeting}</h2>
               </motion.div>
 
@@ -258,7 +368,7 @@ function LetterBody({ onBack }: { onBack: () => void }) {
                 </motion.p>
               </div>
 
-              {/* His own words */}
+              {/* In his own words */}
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -272,7 +382,6 @@ function LetterBody({ onBack }: { onBack: () => void }) {
                 <div className="mt-1 font-display text-[38px] leading-none text-night md:text-[44px]">{finalMessage.name}</div>
               </motion.div>
 
-              {/* The song */}
               <Song play={reachedEnd} />
 
               <p className="mt-16 text-center font-mono text-[10.5px] uppercase tracking-[0.3em] text-night/40">{finalMessage.end}</p>
@@ -294,28 +403,26 @@ function LetterBody({ onBack }: { onBack: () => void }) {
   );
 }
 
-/* ---------- Song ---------- */
+/* ---------- The song ---------- */
+
+type SpotifyController = {
+  play: () => void;
+  destroy?: () => void;
+  addListener: (event: string, cb: (e: { data?: { isPaused?: boolean } }) => void) => void;
+};
+type SpotifyIframeApi = {
+  createController: (
+    el: HTMLElement,
+    options: { uri: string; width: string | number; height: string | number },
+    cb: (controller: SpotifyController) => void
+  ) => void;
+};
 
 declare global {
   interface Window {
     onSpotifyIframeApiReady?: (api: SpotifyIframeApi) => void;
     __spotifyIframeApi?: SpotifyIframeApi;
   }
-}
-interface SpotifyEmbedController {
-  play: () => void;
-  pause: () => void;
-  togglePlay: () => void;
-  loadUri: (uri: string) => void;
-  destroy: () => void;
-  addListener: (event: string, cb: (e: { data: { isPaused?: boolean; position?: number } }) => void) => void;
-}
-interface SpotifyIframeApi {
-  createController: (
-    el: HTMLElement,
-    options: { uri: string; width?: string | number; height?: string | number; theme?: string },
-    cb: (controller: SpotifyEmbedController) => void
-  ) => void;
 }
 
 function loadSpotifyApi(): Promise<SpotifyIframeApi> {
@@ -327,7 +434,7 @@ function loadSpotifyApi(): Promise<SpotifyIframeApi> {
       prev?.(api);
       resolve(api);
     };
-    if (!document.querySelector('script[data-spotify-iframe-api]')) {
+    if (!document.querySelector("script[data-spotify-iframe-api]")) {
       const s = document.createElement("script");
       s.src = "https://open.spotify.com/embed/iframe-api/v1";
       s.async = true;
@@ -338,88 +445,84 @@ function loadSpotifyApi(): Promise<SpotifyIframeApi> {
 }
 
 function Song({ play }: { play: boolean }) {
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const hostRef = useRef<HTMLDivElement>(null);
-  const controllerRef = useRef<SpotifyEmbedController | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const controllerRef = useRef<SpotifyController | null>(null);
   const [ready, setReady] = useState(false);
-  const [started, setStarted] = useState(false);
-  const [blocked, setBlocked] = useState(false);
-  const startedRef = useRef(false);
-  startedRef.current = started;
-  const useLocal = !!media.song;
+  const [playing, setPlaying] = useState(false);
+  const [needsTap, setNeedsTap] = useState(false);
+  const playingRef = useRef(false);
+  playingRef.current = playing;
 
-  // Spotify: build the player once.
+  const local = !!media.song;
+
+  // Spotify embed (only when there is no local file)
   useEffect(() => {
-    if (useLocal) return;
+    if (local) return;
     let cancelled = false;
-    const host = hostRef.current;
-    if (!host) return;
+    if (!hostRef.current) return;
     loadSpotifyApi().then((api) => {
       if (cancelled || !hostRef.current) return;
-      const mount = document.createElement("div");
-      hostRef.current.appendChild(mount);
-      api.createController(
-        mount,
-        { uri: `spotify:track:${media.spotifyTrackId}`, width: "100%", height: 152 },
-        (controller) => {
-          controllerRef.current = controller;
-          controller.addListener("ready", () => setReady(true));
-          controller.addListener("playback_update", (e) => {
-            if (e.data && e.data.isPaused === false) {
-              setStarted(true);
-              setBlocked(false);
-            }
-          });
-        }
-      );
+      const el = document.createElement("div");
+      hostRef.current.appendChild(el);
+      api.createController(el, { uri: `spotify:track:${media.spotifyTrackId}`, width: "100%", height: 152 }, (controller) => {
+        controllerRef.current = controller;
+        controller.addListener("ready", () => setReady(true));
+        controller.addListener("playback_update", (e) => {
+          if (e.data && e.data.isPaused === false) {
+            setPlaying(true);
+            setNeedsTap(false);
+          }
+        });
+      });
     });
     return () => {
       cancelled = true;
       controllerRef.current?.destroy?.();
       controllerRef.current = null;
     };
-  }, [useLocal]);
+  }, [local]);
 
   const start = useCallback(() => {
-    if (useLocal) {
+    if (local) {
       const a = audioRef.current;
       if (!a) return;
       a.volume = 0.9;
       a.play()
         .then(() => {
-          setStarted(true);
-          setBlocked(false);
+          setPlaying(true);
+          setNeedsTap(false);
         })
-        .catch(() => setBlocked(true));
+        .catch(() => setNeedsTap(true));
       return;
     }
     controllerRef.current?.play();
-    // If nothing reports back shortly, show a gentle tap prompt.
     window.setTimeout(() => {
-      if (!startedRef.current) setBlocked(true);
+      if (!playingRef.current) setNeedsTap(true);
     }, 2500);
-  }, [useLocal]);
+  }, [local]);
 
-  // Autoplay once the final paragraph is on screen (and the player is ready).
   useEffect(() => {
-    if (!play || started) return;
-    if (useLocal || ready) start();
-  }, [play, ready, useLocal, started, start]);
+    if (!play || playing) return;
+    if (local || ready) start();
+  }, [play, ready, local, playing, start]);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: play ? 1 : 0.0, y: play ? 0 : 12 }}
+      animate={{ opacity: play ? 1 : 0, y: play ? 0 : 12 }}
       transition={{ duration: 1.4, delay: 0.6, ease: cine }}
       className="mt-14"
     >
       <div className="flex items-baseline justify-between gap-4">
-        <Kicker className="text-night/45">{media.songTitle} · {media.songArtist}</Kicker>
-        <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-night/40">{started ? "playing" : blocked ? "tap play" : "..."}</span>
+        <Kicker className="text-night/45">
+          {media.songTitle} · {media.songArtist}
+        </Kicker>
+        <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-night/40">{playing ? "playing" : needsTap ? "tap play" : "..."}</span>
       </div>
       <p className="mt-2 font-display text-[22px] italic text-night/80">{finalMessage.songLine}</p>
 
-      {useLocal ? (
+      {local ? (
         <div className="mt-4 flex items-center gap-4 rounded-[6px] border border-night/10 bg-night px-4 py-3">
           <button
             type="button"
@@ -441,8 +544,12 @@ function Song({ play }: { play: boolean }) {
         </div>
       )}
 
-      {blocked && !started && (
-        <button type="button" onClick={start} className="mt-3 font-mono text-[11px] uppercase tracking-[0.25em] text-night/60 underline-offset-4 hover:underline">
+      {needsTap && !playing && (
+        <button
+          type="button"
+          onClick={start}
+          className="mt-3 font-mono text-[11px] uppercase tracking-[0.25em] text-night/60 underline-offset-4 hover:underline"
+        >
           {finalMessage.songTap}
         </button>
       )}

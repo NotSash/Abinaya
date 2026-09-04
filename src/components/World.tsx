@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useMotionValue, useSpring } from "motion/react
 import { roomImg } from "../lib/assets";
 import {
   copy,
+  discoverable,
   eggIdle,
   eggLines,
   eggLoopFrom,
@@ -118,6 +119,8 @@ export function World({
     setEggLine(eggLines[next]);
     window.clearTimeout(eggTimerRef.current);
     eggTimerRef.current = window.setTimeout(() => setEggLine(null), EGG_LINGER);
+    // Poking the egg counts as finding it.
+    onOpen("egg");
   };
   useEffect(() => () => window.clearTimeout(eggTimerRef.current), []);
 
@@ -136,10 +139,11 @@ export function World({
     return h.whisper;
   };
 
+  const foundCount = visited.filter((id) => discoverable.includes(id)).length;
+
   return (
     <div
-      className="absolute inset-0 overflow-hidden bg-night"
-      style={{ touchAction: "none" }}
+      className="absolute inset-0 touch-none select-none overflow-hidden bg-night"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -148,7 +152,7 @@ export function World({
       {/* Stage */}
       <motion.div
         className="absolute left-0 top-0 will-change-transform"
-        style={{ width: room.w, height: room.h, x: sx, y: sy }}
+        style={{ x: sx, y: sy, width: room.w, height: room.h }}
       >
         <motion.img
           src={roomImg}
@@ -206,7 +210,6 @@ export function World({
                 </>
               )}
 
-              {/* Egg speech */}
               {h.id === "egg" && (
                 <AnimatePresence>
                   {eggLine && (
@@ -224,7 +227,6 @@ export function World({
                 </AnimatePresence>
               )}
 
-              {/* Label + whisper */}
               <AnimatePresence>
                 {showWhisper && !eggLine && (
                   <motion.span
@@ -272,7 +274,7 @@ export function World({
               {copy.world.corner}
             </div>
             <div className="absolute right-5 top-5 font-mono text-[10px] uppercase tracking-[0.3em] text-ivory/45 md:right-7 md:top-7">
-              {visited.length}/{hotspots.filter((h) => h.id !== "egg" && h.id !== "envelope").length} found
+              {foundCount}/{discoverable.length} found
             </div>
             <motion.p
               initial={{ opacity: 0, y: 8 }}

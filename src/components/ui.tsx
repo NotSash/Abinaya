@@ -4,12 +4,8 @@ import { copy } from "../content/egginaya";
 import { cine } from "../lib/hooks";
 import { cn } from "../utils/cn";
 
-/** A small, low-key button. */
-export function QuietButton({
-  className,
-  children,
-  ...rest
-}: ButtonHTMLAttributes<HTMLButtonElement> & { children: ReactNode }) {
+/* ---------- A quiet pill button ---------- */
+export function QuietButton({ className, children, ...rest }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       {...rest}
@@ -25,7 +21,7 @@ export function QuietButton({
   );
 }
 
-/** "back to the room" – sits in the top-left of every scene. */
+/* ---------- Back to the room ---------- */
 export function BackToRoom({ onClick, tone = "dark" }: { onClick: () => void; tone?: "dark" | "light" }) {
   return (
     <motion.button
@@ -47,7 +43,7 @@ export function BackToRoom({ onClick, tone = "dark" }: { onClick: () => void; to
   );
 }
 
-/** A thread that drops down to say "there is more below". */
+/* ---------- Scroll cue ---------- */
 export function ScrollCue({ show, className, tone = "dark" }: { show: boolean; className?: string; tone?: "dark" | "light" }) {
   return (
     <motion.div
@@ -68,21 +64,20 @@ export function ScrollCue({ show, className, tone = "dark" }: { show: boolean; c
   );
 }
 
-/** Reveals bracketed text as a soft highlight so nothing is missed. */
+/* ---------- Placeholder highlighter ---------- */
 export function Placeholder({ text, className }: { text: string; className?: string }) {
-  const isPlaceholder = /^\[.*\]$/.test(text.trim());
-  if (!isPlaceholder) return <span className={className}>{text}</span>;
-  return <span className={cn("placeholder", className)}>{text}</span>;
+  if (/^\[.*\]$/.test(text.trim())) {
+    return <span className={cn("placeholder", className)}>{text}</span>;
+  }
+  return <span className={className}>{text}</span>;
 }
 
-/** Little section label used across scenes. */
+/* ---------- Kicker ---------- */
 export function Kicker({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={cn("font-mono text-[10px] uppercase tracking-[0.32em] text-ice/55", className)}>{children}</div>
-  );
+  return <div className={cn("font-mono text-[10px] uppercase tracking-[0.32em] text-ice/55", className)}>{children}</div>;
 }
 
-/** A framed slot for an image that may not have been dropped in yet. */
+/* ---------- Evidence (a screenshot) ---------- */
 export function Evidence({
   src,
   alt,

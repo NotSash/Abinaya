@@ -5,7 +5,6 @@ import { facts, september } from "../content/egginaya";
 import { cine, useEscape } from "../lib/hooks";
 import { BackToRoom, Kicker } from "./ui";
 
-/** Through the window. The room falls away and it is just the night and one date. */
 export function WindowNight({ onBack }: { onBack: () => void }) {
   useEscape(onBack);
 
@@ -52,14 +51,16 @@ export function WindowNight({ onBack }: { onBack: () => void }) {
         <span
           key={s.id}
           className="star"
-          style={{
-            left: `${s.x}%`,
-            top: `${s.y}%`,
-            width: s.s,
-            height: s.s,
-            ["--dur" as string]: `${s.d}s`,
-            ["--delay" as string]: `${s.delay}s`,
-          }}
+          style={
+            {
+              left: `${s.x}%`,
+              top: `${s.y}%`,
+              width: s.s,
+              height: s.s,
+              "--dur": `${s.d}s`,
+              "--delay": `${s.delay}s`,
+            } as React.CSSProperties
+          }
         />
       ))}
       <div className="grain" />
@@ -68,14 +69,27 @@ export function WindowNight({ onBack }: { onBack: () => void }) {
         <motion.div {...fade(0.4)}>
           <Kicker>{facts.togetherDate.month}</Kicker>
         </motion.div>
-        <motion.div {...fade(0.7)} className="mt-1 font-display text-[132px] leading-[0.9] text-ivory md:text-[200px]">
+
+        {/* The day. Given its full line height so the tail of the "5" never reaches the year below. */}
+        <motion.div
+          {...fade(0.7)}
+          className="mt-1 font-display text-[132px] leading-[1.05] text-ivory md:text-[200px]"
+        >
           {facts.togetherDate.day}
         </motion.div>
-        <motion.div {...fade(1.0)} className="mt-3 font-mono text-[12px] tracking-[0.4em] text-ice/70">
+
+        {/* The year: bigger, brighter and clear of the numerals above. */}
+        <motion.div
+          {...fade(1)}
+          className="mt-2 pl-[0.5em] font-mono text-[17px] tracking-[0.5em] text-ice/85 md:mt-3 md:text-[20px]"
+        >
           {facts.togetherDate.year}
         </motion.div>
 
-        <motion.p {...fade(1.6)} className="mt-10 max-w-[560px] text-balance font-display text-[22px] italic leading-[1.35] text-ivory/90 md:text-[27px]">
+        <motion.p
+          {...fade(1.6)}
+          className="mt-10 max-w-[560px] text-balance font-display text-[22px] italic leading-[1.35] text-ivory/90 md:text-[27px]"
+        >
           {september.lead}
         </motion.p>
         <motion.p {...fade(2.1)} className="mt-4 max-w-[520px] text-balance text-[14px] leading-[1.7] text-ivory/65 md:text-[15px]">

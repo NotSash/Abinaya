@@ -16,6 +16,8 @@
  *
  * Any image extension works (.jpg / .jpeg / .png / .webp / .heic is NOT supported by browsers – export to jpg).
  * For the live photo, .mp4 is safest; .mov also works on iPhone/Safari.
+ * Photos can be ANY size or shape – portrait, landscape, square. The frames on the pinboard
+ * measure each picture when it loads and shape themselves around it.
  */
 
 /* ---------- Media (auto-discovered) ---------- */
@@ -120,8 +122,11 @@ export const envelopeWhisper = {
   open: "open me. finally.",
 };
 
-/** The envelope opens once these have been seen. */
-export const envelopeRequires: HotspotId[] = ["system", "archive", "window"];
+/** Everything that counts as "found" in the room (the envelope itself is the reward, not a find). */
+export const discoverable: HotspotId[] = ["system", "archive", "window", "lunch", "egg"];
+
+/** The envelope opens once ALL of these have been seen – the laptop, the pinboard, the window, the lunch box and the egg. */
+export const envelopeRequires: HotspotId[] = [...discoverable];
 
 /* ---------- The egg ---------- */
 /** What the egg says before anyone has touched it. */
@@ -150,7 +155,7 @@ export const system = {
     profile: { dir: "", file: "profile.egg" },
     incident: { dir: "incidents/", file: "maths_period.log" },
     marriage: { dir: "records/", file: "marriage.cert" },
-    media: { dir: "media/", file: "8 files" },
+    media: { dir: "media/", file: "9 files" },
     locked: { dir: "", file: "blue_envelope.enc" },
   },
   profile: {
@@ -220,19 +225,70 @@ export const system = {
     evidenceMissing: "drop the signed message at src/assets/photos/marriage.png",
     footnote: "This document is a joke. It is also, in every way that matters to the two people named on it, not.",
   },
-  // Easter eggs as filenames. Not clickable. Rewards people who read.
+  /**
+   * The media folder. Each "file" is one thing that is completely, unmistakably her.
+   *   name  – the filename on the left
+   *   meta  – the short grey tag on the right
+   *   note  – the actual line, written to her
+   */
   mediaFiles: [
-    { name: "eggos.txt", meta: "11 items", note: "she'd understand" },
-    { name: "hawkins_1983.map", meta: "upside down: no" },
-    { name: "bazinga.wav", meta: "0:03" },
-    { name: "soft_kitty.mid", meta: "for when sick" },
-    { name: "the_spot.cfg", meta: "left cushion. do not move." },
-    { name: "shinchan.gif", meta: "looping" },
-    { name: "blue.pal", meta: "1 colour, 400 shades" },
-    { name: "accessories.list", meta: "longer than dresses.list" },
+    {
+      name: "shinchan_every_episode.mp4",
+      tag: "shin chan",
+      meta: "rewatched: countless",
+      note: "You've seen every episode and you still laugh like it's the first time – the same wheezy, head-thrown-back laugh at the same butt-dance jokes. I stopped watching the screen a long time ago. I watch you watching it.",
+    },
+    {
+      name: "hawkins_survival_plan.txt",
+      tag: "stranger things",
+      meta: "upside down: not scared",
+      note: "If the Upside Down ever opened up in our street, you'd be the one holding the flashlight and I'd be the one holding your hand. You're my Eleven – small, stubborn, and easily the strongest person in the room. Eggos are on me.",
+    },
+    {
+      name: "young_sheldon_s1-s7.log",
+      tag: "young sheldon",
+      meta: "cried at the finale: yes",
+      note: "You watch it like it's a comedy but you tear up every time Mary hugs Sheldon. You have Missy's sharp tongue and Meemaw's heart. I'd move to Medford, Texas if you asked. I'd hate it. I'd still go.",
+    },
+    {
+      name: "soft_kitty.mid",
+      tag: "the big bang theory",
+      meta: "for when you're sick",
+      note: "Soft kitty, warm kitty, little ball of fur. When you're sick I'll sing it, out of tune, three times, because that's the rule. And yes, you have a spot on the sofa. Left cushion. It's yours. I don't argue anymore. Bazinga.",
+    },
+    {
+      name: "blue.pal",
+      tag: "your colour",
+      meta: "1 colour, 400 shades",
+      note: "Anything blue and I think of you. A dupatta, a car, the sky at 6pm, this entire website. I've stopped calling it 'blue'. It's just 'the Abinaya colour' now.",
+    },
+    {
+      name: "bags_i_am_saving_for.xlsx",
+      tag: "expensive bags",
+      meta: "last edited: today",
+      note: "You'll walk past ten dresses to stand in front of one bag. I know the exact one you keep going back to. It's on the list. The list has a date on it. I'm not telling you the date.",
+    },
+    {
+      name: "accessories.list",
+      tag: "sparkle",
+      meta: "longer than dresses.list",
+      note: "A little sparkle at your wrist, the gold chain at your neck, the earrings you change your mind about four times. You don't dress up for the outfit. The outfit dresses up because it's on you.",
+    },
+    {
+      name: "krishna.prayer",
+      tag: "kanna",
+      meta: "04 sept · 05 sept",
+      note: "This year Krishna's birthday is on the 4th of September and yours is on the 5th. I don't think that's an accident. The world spent one day celebrating the god you love, and the very next day it gave me you. Jannmashtami on the 4th, my Abinaya on the 5th. I know exactly which lamp I'm lighting on both days.",
+    },
+    {
+      name: "her_laugh.wav",
+      tag: "no reference needed",
+      meta: "∞ plays",
+      note: "The one where you laugh at your own joke before you finish telling it. No show wrote that. That one's just you, and it's my favourite thing this laptop has ever recorded.",
+    },
   ],
-  mediaHeading: "things she'd get",
-  mediaFooter: "no previews available. you know them anyway. that's the point.",
+  mediaHeading: "things that are so you",
+  mediaFooter: "no previews needed. I know every one of these by heart. that's the point.",
   lockedFile: {
     name: "blue_envelope.enc",
     line: "This one doesn't open here. It's on the desk. Go on, I'll wait.",
@@ -260,6 +316,8 @@ export interface Print {
   x: number;
   y: number;
   w: number; // width in px at desktop scale
+  /** colour of the pushpin holding it */
+  pin?: "blue" | "red" | "gold";
 }
 
 export const prints: Print[] = [
@@ -272,7 +330,8 @@ export const prints: Print[] = [
     tilt: -4,
     x: 18,
     y: 30,
-    w: 190,
+    w: 220,
+    pin: "red",
   },
   {
     id: "p1",
@@ -286,6 +345,7 @@ export const prints: Print[] = [
     x: 40,
     y: 22,
     w: 230,
+    pin: "blue",
   },
   {
     id: "p2",
@@ -299,6 +359,7 @@ export const prints: Print[] = [
     x: 66,
     y: 28,
     w: 210,
+    pin: "gold",
   },
   {
     id: "p3",
@@ -312,6 +373,7 @@ export const prints: Print[] = [
     x: 28,
     y: 66,
     w: 200,
+    pin: "blue",
   },
   {
     id: "p4",
@@ -325,6 +387,7 @@ export const prints: Print[] = [
     x: 54,
     y: 70,
     w: 220,
+    pin: "red",
   },
   {
     id: "p5",
@@ -339,6 +402,7 @@ export const prints: Print[] = [
     x: 80,
     y: 70,
     w: 210,
+    pin: "gold",
   },
 ];
 

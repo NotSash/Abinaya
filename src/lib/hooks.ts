@@ -1,28 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import type { HotspotId } from "../content/egginaya";
 
-const KEY = "egginaya.visited.v1";
-
-/** Which places in the room have been seen. Remembered in the browser. */
+/**
+ * Which places in the room have been seen.
+ * Kept in memory only, on purpose: a refresh always starts the room from the beginning.
+ */
 export function useVisited() {
-  const [visited, setVisited] = useState<HotspotId[]>(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? (parsed as HotspotId[]) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(visited));
-    } catch {
-      /* private mode etc. */
-    }
-  }, [visited]);
+  const [visited, setVisited] = useState<HotspotId[]>([]);
 
   const mark = useCallback((id: HotspotId) => {
     setVisited((v) => (v.includes(id) ? v : [...v, id]));

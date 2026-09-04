@@ -7,10 +7,12 @@
   --color-ice: #d9e6ff;
   --color-ivory: #f3ecdd;
   --color-gold: #e8c98a;
+  --color-cream: #f7f1e3;
 
   --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
 
   --ease-cine: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
@@ -67,6 +69,81 @@ button {
   background-image: var(--tex-paper);
   background-size: 200px 200px;
   color: #1a1a1a;
+}
+
+/* A slightly warmer paper for the polaroid frames on the pinboard */
+.polaroid {
+  background-color: #fbf7ee;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 40%),
+    var(--tex-paper);
+  background-size:
+    100% 100%,
+    200px 200px;
+  color: #1a1a1a;
+}
+
+/* Sticky note on the pinboard */
+.sticky-note {
+  background-color: #fff3b8;
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 30%),
+    repeating-linear-gradient(180deg, transparent 0 27px, rgba(60, 40, 0, 0.09) 27px 28px),
+    var(--tex-paper);
+  background-size:
+    100% 100%,
+    100% 100%,
+    200px 200px;
+  color: #2a2110;
+}
+.sticky-note::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 26px;
+  height: 26px;
+  background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.1) 50%, rgba(255, 244, 200, 0.95) 52%);
+  border-top-left-radius: 2px;
+}
+
+/* Pushpin */
+.pushpin {
+  position: absolute;
+  left: 50%;
+  top: -9px;
+  width: 18px;
+  height: 18px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, #8fb3ff 0%, #2f6bff 45%, #163a9e 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 6px 10px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(0, 0, 0, 0.25);
+  z-index: 3;
+}
+.pushpin::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 2px;
+  height: 7px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #5a6478, #1a1f2b);
+  opacity: 0.8;
+}
+.pushpin-red {
+  background: radial-gradient(circle at 35% 30%, #ff9a9a 0%, #e0343e 45%, #8a1520 100%);
+}
+.pushpin-gold {
+  background: radial-gradient(circle at 35% 30%, #fff0c2 0%, #e8c98a 45%, #9a7a3a 100%);
+}
+
+/* Handwritten captions */
+.hand {
+  font-family: var(--font-hand);
 }
 
 /* Scroll areas inside scenes */
@@ -284,6 +361,20 @@ button {
   animation: live-pulse 2.4s ease-out infinite;
 }
 
+/* Wax seal shimmer on the locked envelope */
+@keyframes seal-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(232, 201, 138, 0.0), 0 2px 10px rgba(0, 0, 0, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 22px 4px rgba(232, 201, 138, 0.28), 0 2px 10px rgba(0, 0, 0, 0.35);
+  }
+}
+.seal-glow {
+  animation: seal-glow 3.2s var(--ease-inout) infinite;
+}
+
 /* Cursor blink for the system */
 @keyframes blink {
   0%,
@@ -307,6 +398,7 @@ button {
   .cue-dot,
   .star,
   .live-badge,
+  .seal-glow,
   .blink {
     animation: none !important;
   }
