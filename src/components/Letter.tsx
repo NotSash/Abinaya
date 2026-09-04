@@ -48,7 +48,7 @@ export function Letter({ unlocked, visited, onBack }: { unlocked: boolean; visit
 function Envelope({ size = 230, opening = false, golden = false }: { size?: number; opening?: boolean; golden?: boolean }) {
   const h = size * 0.66;
   // Siblings only, no nested stacking contexts:
-  //   flap (behind everything once open) < letter < body < seal
+  // flap (behind everything once open) < letter < body < seal
   return (
     <div className="relative" style={{ width: size, height: h, perspective: 900 }}>
       {/* flap */}
@@ -175,7 +175,6 @@ function Locked({ visited, onBack }: { visited: HotspotId[]; onBack: () => void 
                 <li key={id} className={cn("relative flex w-[96px] flex-col items-center gap-3", done ? "mark-seen" : "hotspot")}>
                   <span className="relative block h-12 w-12">
                     <span className="mark-ring" />
-                    <span className="mark-ring mark-ring-2" />
                     <span className="mark-dot" />
                   </span>
                   <span className={cn("font-mono text-[10px] uppercase tracking-[0.3em]", done ? "text-ice/50" : "text-ice")}>{h?.label ?? id}</span>
@@ -220,6 +219,7 @@ function Sealed({ opening, onOpen, onBack }: { opening: boolean; onOpen: () => v
           className="relative"
           initial={{ opacity: 0, y: 24, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: opening ? 1.08 : 1 }}
+          whileHover={opening ? undefined : { scale: 1.04 }}
           transition={{ duration: 1.4, delay: 0.2, ease: cine }}
           aria-label="open the envelope"
         >
@@ -500,7 +500,7 @@ function Song({ play }: { play: boolean }) {
               if (a.paused) a.play().then(() => setNeedsTap(false)).catch(() => {});
               else a.pause();
             }}
-            className="flex h-12 w-12 items-center justify-center rounded-full border border-night/25 text-night transition-colors hover:bg-night/5"
+            className="flex h-12 w-12 items-center justify-center rounded-full border border-night/25 text-night transition-all duration-300 hover:scale-105 hover:bg-night/5"
             aria-label={playing ? "pause" : "play"}
           >
             {playing ? "❚❚" : "▶"}

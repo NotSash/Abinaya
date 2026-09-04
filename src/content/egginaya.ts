@@ -4,15 +4,15 @@
  * Everything personal lives here. Components only read from it.
  *
  * FILES YOU DROP IN (no code changes needed):
- *   src/assets/photos/01.jpg              "Our 1st pic together!!!" (both of you)
- *   src/assets/photos/02.jpg              "Pretty little babyyyyy"
- *   src/assets/photos/03.jpg              "Sleepyheaddddd -_-"
- *   src/assets/photos/04.jpg              "Shawwtyyyyy" (the text where she admits you're taller)
- *   src/assets/photos/05.jpg              "Baddyyyyyyy", the still frame of the Live Photo
- *   src/assets/photos/05.mp4              the moving part of the Live Photo
- *   src/assets/photos/maths-period.png    the "maths mam borrowed my maths period" screenshot
- *   src/assets/photos/marriage.png        the signed Instagram Marriage Association message
- *   src/assets/audio/until-i-found-you.mp3  optional. If present it is used instead of Spotify.
+ *   src/assets/photos/01.jpg                 "Our 1st pic together!!!" (both of you)
+ *   src/assets/photos/02.jpg                 "Pretty little babyyyyy"
+ *   src/assets/photos/03.jpg                 "Sleepyheaddddd -_-"
+ *   src/assets/photos/04.jpg                 "Shawwtyyyyy" (the text where she admits you're taller)
+ *   src/assets/photos/05.jpg                 "Baddyyyyyyy", the still frame of the Live Photo
+ *   src/assets/photos/05.mp4                 the moving part of the Live Photo
+ *   src/assets/photos/maths-period.png       the "maths mam borrowed my maths period" screenshot
+ *   src/assets/photos/marriage.png           the signed Instagram Marriage Association message
+ *   src/assets/audio/until-i-found-you.mp3   optional. If present it is used instead of Spotify.
  *
  * Any image extension works (.jpg / .jpeg / .png / .webp). HEIC is NOT supported by browsers, export to jpg.
  * Photos can be ANY size or shape. The frames measure each picture when it loads and shape
@@ -236,9 +236,9 @@ export const system = {
   },
   /**
    * The media folder. Each "file" is one thing that is completely, unmistakably her.
-   *   name  the filename on the left
-   *   meta  the short grey tag on the right
-   *   note  the actual line, written to her
+   *   name   the filename on the left
+   *   meta   the short grey tag on the right
+   *   note   the actual line, written to her
    */
   mediaFiles: [
     {
@@ -420,7 +420,9 @@ export const archive = {
   kicker: "the pinboard",
   hint: "pick one up",
   hintTouch: "tap one to pick it up",
-  putBack: "put it back",
+  /** shown while a print is picked up. Clicking anywhere puts it back. */
+  putBack: "click again to put it back",
+  putBackTouch: "tap again to put it back",
   missing: "photo goes here",
   liveHint: "live",
 };

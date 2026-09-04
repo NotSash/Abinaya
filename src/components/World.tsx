@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { AnimatePresence, motion, useMotionValue, useSpring } from "motion/react";
 import {
   copy,
@@ -27,7 +27,6 @@ interface WorldProps {
 }
 
 const FALLBACK = { w: 1920, h: 1080 };
-const REST_SCALE = 1.06;
 
 export function World({ visited, envelopeUnlocked, active, focus, onOpen }: WorldProps) {
   const { w: vw, h: vh } = useViewport();
@@ -41,51 +40,84 @@ export function World({ visited, envelopeUnlocked, active, focus, onOpen }: Worl
   const [eggTalking, setEggTalking] = useState(false);
   const eggTimer = useRef(0);
 
-  /* ---- geometry: draw the picture like object-fit: cover, and keep the marks inside it ---- */
+  /* ---- geometry ----
+   * The picture is drawn like object-fit: cover, then a little larger still, so there is
+   * room to look around: up to the top of the window, down to the desk, and side to side.
+   * Everything inside the plane is positioned in percentages of the picture, so the marks
+   * always sit on the things they point at. */
   const iw = nat?.w ?? FALLBACK.w;
   const ih = nat?.h ?? FALLBACK.h;
-  const cover = Math.max(vw / iw, vh / ih);
+  const extra = touch ? 1.18 : 1.12;
+  const cover = Math.max(vw / iw, vh / ih) * extra;
   const dw = iw * cover;
   const dh = ih * cover;
-  const left = (vw - dw) / 2;
-  const top = (vh - dh) / 2;
-  const restScale = touch ? 1 : REST_SCALE;
+  const rangeX = Math.max(0, dw - vw);
+  const rangeY = Math.max(0, dh - vh);
 
-  /* ---- parallax (mouse) ---- */
-  const px = useMotionValue(0);
-  const py = useMotionValue(0);
-  const sx = useSpring(px, { stiffness: 40, damping: 18, mass: 0.8 });
-  const sy = useSpring(py, { stiffness: 40, damping: 18, mass: 0.8 });
+  /* ---- camera pan ---- */
+  const panX = useMotionValue(-rangeX / 2);
+  const panY = useMotionValue(-rangeY / 2);
+  const sx = useSpring(panX, { stiffness: 40, damping: 18, mass: 1.2 });
+  const sy = useSpring(panY, { stiffness: 40, damping: 18, mass: 1.2 });
 
   useEffect(() => {
+    // Portrait phones: start a touch left so the desk (laptop + envelope) is in the first view.
+    const startX = touch && vw < vh ? -rangeX * 0.3 : -rangeX / 2;
+    panX.set(startX);
+    panY.set(-rangeY / 2);
+  }, [rangeX, rangeY, panX, panY, touch, vw, vh]);
+
+  const clamp = useCallback(
+    (x: number, y: number) => {
+      panX.set(Math.min(0, Math.max(-rangeX, x)));
+      panY.set(Math.min(0, Math.max(-rangeY, y)));
+    },
+    [panX, panY, rangeX, rangeY]
+  );
+
+  // Desktop: the room turns gently toward the cursor, all the way to its edges.
+  useEffect(() => {
     if (touch) return;
-    const on = (e: MouseEvent) => {
+    const onMove = (e: PointerEvent) => {
       if (!active) return;
       const nx = e.clientX / vw - 0.5;
       const ny = e.clientY / vh - 0.5;
-      px.set(-nx * 22);
-      py.set(-ny * 14);
+      clamp(-rangeX / 2 - nx * rangeX * 0.95, -rangeY / 2 - ny * rangeY * 0.95);
     };
-    window.addEventListener("mousemove", on);
-    return () => window.removeEventListener("mousemove", on);
-  }, [touch, vw, vh, px, py, active]);
+    window.addEventListener("pointermove", onMove);
+    return () => window.removeEventListener("pointermove", onMove);
+  }, [touch, vw, vh, rangeX, rangeY, clamp, active]);
 
-  /* ---- drag (touch): the room is wider than the phone, so let her look around ---- */
-  const dragX = useMotionValue(left);
-  useEffect(() => {
-    if (touch) dragX.set(Math.min(0, Math.max(vw - dw, left)));
-  }, [touch, left, vw, dw, dragX]);
+  // Touch: drag to look around.
+  const dragRef = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
+  const movedRef = useRef(false);
+  const onPointerDown = (e: ReactPointerEvent) => {
+    if (!touch || !active) return;
+    dragRef.current = { x: e.clientX, y: e.clientY, px: panX.get(), py: panY.get() };
+    movedRef.current = false;
+  };
+  const onPointerMove = (e: ReactPointerEvent) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const dx = e.clientX - d.x;
+    const dy = e.clientY - d.y;
+    if (Math.abs(dx) + Math.abs(dy) > 6) movedRef.current = true;
+    clamp(d.px + dx, d.py + dy);
+  };
+  const onPointerUp = () => {
+    dragRef.current = null;
+  };
 
   /* ---- camera push-in when something opens ---- */
   const focused = useMemo(() => hotspots.find((h) => h.id === focus) ?? null, [focus]);
   const origin = useMemo(() => {
     if (!focused) return { x: 50, y: 50 };
-    const cx = left + (focused.x / 100) * dw;
-    const cy = top + (focused.y / 100) * dh;
-    const ox = vw / 2 + (cx - vw / 2) * restScale;
-    const oy = vh / 2 + (cy - vh / 2) * restScale;
-    return { x: (ox / vw) * 100, y: (oy / vh) * 100 };
-  }, [focused, left, top, dw, dh, vw, vh, restScale]);
+    const cx = sx.get() + (focused.x / 100) * dw;
+    const cy = sy.get() + (focused.y / 100) * dh;
+    const x = Math.min(100, Math.max(0, (cx / vw) * 100));
+    const y = Math.min(100, Math.max(0, (cy / vh) * 100));
+    return { x, y };
+  }, [focused, dw, dh, vw, vh, sx, sy]);
 
   /* ---- the egg talks ---- */
   const pokeEgg = useCallback(() => {
@@ -101,6 +133,7 @@ export function World({ visited, envelopeUnlocked, active, focus, onOpen }: Worl
   useEffect(() => () => window.clearTimeout(eggTimer.current), []);
 
   const handleOpen = (h: Hotspot) => {
+    if (movedRef.current) return; // it was a drag, not a tap
     if (h.id === "egg") pokeEgg();
     onOpen(h.id);
   };
@@ -113,12 +146,14 @@ export function World({ visited, envelopeUnlocked, active, focus, onOpen }: Worl
 
   const found = discoverable.filter((id) => visited.includes(id)).length;
 
-  const planeStyle = touch
-    ? { left: 0, top, width: dw, height: dh, x: dragX }
-    : { left, top, width: dw, height: dh, x: sx, y: sy, scale: restScale };
-
   return (
-    <div className="absolute inset-0 overflow-hidden bg-night">
+    <div
+      className={cn("absolute inset-0 select-none overflow-hidden bg-night", touch && "touch-none")}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+    >
       {/* camera */}
       <motion.div
         className="absolute inset-0"
@@ -130,14 +165,7 @@ export function World({ visited, envelopeUnlocked, active, focus, onOpen }: Worl
         transition={{ duration: 1.4, ease: cine }}
       >
         {/* image plane. Everything inside is positioned in percentages of the picture. */}
-        <motion.div
-          className="absolute will-change-transform"
-          style={planeStyle}
-          drag={touch ? "x" : false}
-          dragConstraints={touch ? { left: Math.min(0, vw - dw), right: 0 } : undefined}
-          dragElastic={0.05}
-          dragMomentum={false}
-        >
+        <motion.div className="absolute left-0 top-0 will-change-transform" style={{ x: sx, y: sy, width: dw, height: dh }}>
           {/* if the render can't be fetched, the room is still a room */}
           <div className="absolute inset-0 [background:radial-gradient(40%_50%_at_58%_38%,rgba(70,110,200,0.45),transparent_70%),radial-gradient(30%_35%_at_26%_60%,rgba(232,201,138,0.25),transparent_70%),linear-gradient(180deg,#0b1636_0%,#0a1330_55%,#141a2a_100%)]" />
           <motion.img
@@ -151,9 +179,9 @@ export function World({ visited, envelopeUnlocked, active, focus, onOpen }: Worl
               setLoaded(true);
             }}
             className="absolute inset-0 h-full w-full select-none object-cover"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: loaded ? 1 : 0 }}
-            transition={{ duration: 1.6, ease: cine }}
+            initial={{ opacity: 0, scale: 1.04 }}
+            animate={{ opacity: loaded ? 1 : 0, scale: 1 }}
+            transition={{ duration: 2.2, ease: cine }}
           />
 
           {/* warm light from the lamp */}
@@ -176,12 +204,12 @@ export function World({ visited, envelopeUnlocked, active, focus, onOpen }: Worl
                 type="button"
                 aria-label={h.label}
                 className={cn(
-                  "hotspot absolute z-10 h-12 w-12 -translate-x-1/2 -translate-y-1/2",
+                  "hotspot absolute z-10 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full",
                   seen && !isEnvelope && "mark-seen",
                   h.quiet && "mark-quiet",
                   golden && "mark-gold"
                 )}
-                style={{ left: `${h.x}%`, top: `${h.y}%` }}
+                style={{ left: `${h.x}%`, top: `${h.y}%`, opacity: active && loaded ? 1 : 0, transition: "opacity 0.8s" }}
                 onMouseEnter={() => setHover(h.id)}
                 onMouseLeave={() => setHover((v) => (v === h.id ? null : v))}
                 onFocus={() => setHover(h.id)}
@@ -189,7 +217,6 @@ export function World({ visited, envelopeUnlocked, active, focus, onOpen }: Worl
                 onClick={() => handleOpen(h)}
               >
                 <span className="mark-ring" />
-                <span className="mark-ring mark-ring-2" />
                 <span className="mark-dot" />
 
                 <AnimatePresence>
@@ -233,12 +260,34 @@ export function World({ visited, envelopeUnlocked, active, focus, onOpen }: Worl
         animate={{ opacity: active ? 1 : 0 }}
         transition={{ duration: 0.8, ease: cine }}
       >
-        <p className="absolute left-6 top-6 font-mono text-[10.5px] uppercase tracking-[0.38em] text-ice/55 md:left-8 md:top-8">
+        <motion.p
+          initial={{ opacity: 0, x: -8 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1.2, delay: 0.4, ease: cine }}
+          className="absolute left-6 top-6 font-mono text-[10.5px] uppercase tracking-[0.38em] text-ice/55 md:left-8 md:top-8"
+        >
           {copy.world.corner}
-        </p>
-        <p className="absolute right-6 top-6 font-mono text-[10.5px] uppercase tracking-[0.38em] text-ice/55 md:right-8 md:top-8">
-          {found}/{discoverable.length} found
-        </p>
+        </motion.p>
+        <motion.p
+          initial={{ opacity: 0, x: 8 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1.2, delay: 0.4, ease: cine }}
+          className="absolute right-6 top-6 font-mono text-[10.5px] uppercase tracking-[0.38em] text-ice/55 md:right-8 md:top-8"
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={found}
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ duration: 0.5, ease: cine }}
+              className="inline-block"
+            >
+              {found}
+            </motion.span>
+          </AnimatePresence>
+          /{discoverable.length} found
+        </motion.p>
         <motion.p
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: loaded ? 1 : 0, y: loaded ? 0 : 8 }}

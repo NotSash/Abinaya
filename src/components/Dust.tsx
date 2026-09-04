@@ -67,5 +67,5 @@ export function Dust({ active }: { active: boolean }) {
     };
   }, []);
 
-  return <canvas ref={ref} className="pointer-events-none absolute inset-0 h-full w-full" />;
+  return <canvas ref={ref} aria-hidden className="pointer-events-none absolute inset-0 z-[4] h-full w-full" />;
 }

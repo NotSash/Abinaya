@@ -1,202 +1,277 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { media, system } from "../content/egginaya";
 import { cine, useEscape } from "../lib/hooks";
 import { cn } from "../utils/cn";
-import { BackToRoom, Evidence, Kicker, QuietButton, ScrollCue } from "./ui";
+import { BackToRoom, Evidence, QuietButton, ScrollCue } from "./ui";
 
-type Section = keyof typeof system.nav;
+type Section = "profile" | "incident" | "marriage" | "media" | "locked";
+
 const order: Section[] = ["profile", "incident", "marriage", "media", "locked"];
 
 export function SystemOS({ onBack, onGoEnvelope }: { onBack: () => void; onGoEnvelope: () => void }) {
   const [section, setSection] = useState<Section>("profile");
+  const [seen, setSeen] = useState<Section[]>(["profile"]);
+  const [canScroll, setCanScroll] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
   useEscape(onBack);
 
+  const go = (s: Section) => {
+    setSection(s);
+    setSeen((p) => (p.includes(s) ? p : [...p, s]));
+  };
+
+  // Reset scroll per section and work out whether there is more below.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: 0 });
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = 0;
     setScrolled(false);
+    const check = () => setCanScroll(el.scrollHeight - el.clientHeight > 40);
+    const t = window.setTimeout(check, 600);
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => {
+      window.clearTimeout(t);
+      ro.disconnect();
+    };
   }, [section]);
 
   return (
     <motion.div
-      className="absolute inset-0 z-40 bg-night text-ivory"
+      className="absolute inset-0 z-40 flex items-center justify-center bg-night/80 p-0 backdrop-blur-[2px] md:px-8 md:pb-8 md:pt-[4.75rem]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.6 } }}
-      transition={{ duration: 1, ease: cine }}
+      transition={{ duration: 0.9, ease: cine }}
     >
-      {/* faint screen glow */}
-      <div className="pointer-events-none absolute inset-0 [background:radial-gradient(60%_50%_at_30%_20%,rgba(47,107,255,0.12),transparent_70%)]" />
-      <div className="pointer-events-none absolute inset-0 opacity-[0.07] [background:repeating-linear-gradient(180deg,transparent_0_2px,rgba(255,255,255,0.35)_2px_3px)]" />
-
       <BackToRoom onClick={onBack} />
 
-      {/* system header, top right */}
-      <div className="pointer-events-none absolute right-6 top-5 z-30 hidden text-right font-mono text-[10.5px] uppercase tracking-[0.3em] text-ice/45 md:right-8 md:top-7 md:block">
-        <p className="text-ice/70">{system.name}</p>
-        <p className="mt-1">{system.build}</p>
-        <p className="mt-1 text-blue">{system.status}</p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 1.1, delay: 0.15, ease: cine }}
+        className="relative flex h-full w-full flex-col overflow-hidden border-ice/15 bg-[#07102a] text-ice shadow-[0_40px_120px_rgba(0,0,0,0.6)] md:h-[min(760px,calc(100vh-6.75rem))] md:max-w-[1080px] md:rounded-[10px] md:border"
+      >
+        {/* Title bar */}
+        <div className="flex items-center justify-between border-b border-ice/10 px-4 pb-3 pt-[max(3.6rem,env(safe-area-inset-top))] md:px-5 md:pt-3.5">
+          <div className="flex items-center gap-3">
+            <span className="h-2.5 w-2.5 rounded-full bg-blue shadow-[0_0_12px_rgba(47,107,255,0.9)]" />
+            <span className="font-mono text-[12px] tracking-[0.22em] text-ivory">{system.name}</span>
+            <span className="hidden font-mono text-[11px] text-ice/40 md:inline">{system.build}</span>
+          </div>
+          <span className="font-mono text-[11px] text-ice/45">
+            {system.status}
+            <span className="blink ml-1 inline-block h-[11px] w-[6px] translate-y-[2px] bg-ice/60" />
+          </span>
+        </div>
 
-      <div className="absolute inset-0 flex flex-col pt-[max(4.5rem,env(safe-area-inset-top))] md:flex-row md:pt-0">
-        {/* nav */}
-        <nav className="relative z-20 shrink-0 border-b border-ice/10 md:w-[260px] md:border-b-0 md:border-r md:pt-28">
-          <ul className="flex gap-1 overflow-x-auto px-4 pb-3 md:flex-col md:gap-0 md:px-0 md:pb-0">
-            {order.map((key) => {
-              const item = system.nav[key];
-              const on = section === key;
+        <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+          {/* Sidebar / tabs */}
+          <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-ice/10 px-2 py-2 font-mono text-[12px] md:w-[232px] md:flex-col md:overflow-visible md:border-b-0 md:border-r md:px-3 md:py-4">
+            {order.map((s, i) => {
+              const n = system.nav[s];
+              const isActive = s === section;
+              const wasSeen = seen.includes(s);
+              const isLocked = s === "locked";
               return (
-                <li key={key} className="shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setSection(key)}
+                <motion.button
+                  key={s}
+                  type="button"
+                  onClick={() => go(s)}
+                  aria-current={isActive ? "page" : undefined}
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.7, delay: 0.35 + i * 0.06, ease: cine }}
+                  className={cn(
+                    "group grid min-h-11 shrink-0 grid-cols-[14px_minmax(0,1fr)] items-center gap-x-2.5 rounded-[4px] px-2.5 text-left transition-all duration-300 md:w-full md:hover:translate-x-0.5",
+                    isActive ? "bg-blue/10 text-ivory" : "text-ivory/65 hover:bg-blue/6 hover:text-ivory"
+                  )}
+                >
+                  <span
                     className={cn(
-                      "group relative flex w-full items-baseline gap-0 whitespace-nowrap rounded-full px-4 py-2 text-left font-mono text-[12px] transition-colors md:rounded-none md:px-8 md:py-3",
-                      on ? "bg-ice/10 text-ivory md:bg-transparent" : "text-ice/50 hover:text-ice/85"
+                      "h-1.5 w-1.5 rounded-full transition-all duration-500",
+                      isLocked
+                        ? "bg-gold/80 shadow-[0_0_8px_rgba(232,201,138,0.6)]"
+                        : wasSeen
+                          ? "bg-ice/35"
+                          : "bg-ice shadow-[0_0_8px_rgba(217,230,255,0.8)]",
+                      isActive && !isLocked && "scale-125 bg-blue shadow-[0_0_10px_rgba(47,107,255,0.9)]"
                     )}
-                  >
-                    <span
-                      className={cn(
-                        "absolute left-0 top-1/2 hidden h-5 w-[2px] -translate-y-1/2 bg-blue transition-opacity md:block",
-                        on ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <span className="text-ice/40">{item.dir}</span>
-                    <span>{item.file}</span>
-                    {key === "locked" && <span className="ml-2 text-[10px] text-gold/70">●</span>}
-                  </button>
-                </li>
+                  />
+                  <span className="truncate">
+                    {n.dir && <span className="text-ice/40">{n.dir}</span>}
+                    {n.file}
+                  </span>
+                </motion.button>
               );
             })}
-          </ul>
-        </nav>
+          </nav>
 
-        {/* content */}
-        <div className="relative min-h-0 flex-1">
-          <div
-            ref={scrollRef}
-            onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 40)}
-            className="scroll-area absolute inset-0"
-          >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={section}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6, transition: { duration: 0.3 } }}
-                transition={{ duration: 0.8, ease: cine }}
-                className="mx-auto max-w-[820px] px-6 pb-[max(6rem,env(safe-area-inset-bottom))] pt-8 md:px-12 md:pt-28"
-              >
-                {section === "profile" && <Profile />}
-                {section === "incident" && <Incident />}
-                {section === "marriage" && <Marriage />}
-                {section === "media" && <MediaFiles />}
-                {section === "locked" && <Locked onGo={onGoEnvelope} />}
-              </motion.div>
-            </AnimatePresence>
+          {/* Content */}
+          <div className="relative min-h-0 flex-1">
+            <div
+              ref={scrollRef}
+              onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 24)}
+              className="scroll-area h-full px-5 py-7 md:px-12 md:py-10"
+            >
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={section}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6, transition: { duration: 0.25 } }}
+                  transition={{ duration: 0.7, ease: cine }}
+                  className="mx-auto max-w-[640px] pb-28"
+                >
+                  {section === "profile" && <Profile />}
+                  {section === "incident" && <Incident />}
+                  {section === "marriage" && <Marriage />}
+                  {section === "media" && <MediaFiles />}
+                  {section === "locked" && <Locked onGo={onGoEnvelope} />}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+            {/* soft bottom fade so it's obvious the page continues */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#07102a] to-transparent" />
+            {/* the scroll cue lives in the bottom-right corner, out of the text's way */}
+            <ScrollCue hidden={!canScroll || scrolled} className="bottom-4 right-4 md:right-6" />
           </div>
-          <ScrollCue hidden={scrolled || section === "locked"} />
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
 
-/* ------------------------------------------------------------------ */
+/* ---------- Sections ---------- */
 
-function Heading({ kicker, title }: { kicker: string; title: string }) {
-  return (
-    <>
-      <Kicker>{kicker}</Kicker>
-      <h2 className="mt-4 font-display text-[44px] leading-[1.02] text-ivory md:text-[64px]">{title}</h2>
-    </>
-  );
+function Kicker({ children }: { children: ReactNode }) {
+  return <div className="font-mono text-[10px] uppercase tracking-[0.32em] text-ice/45">{children}</div>;
+}
+
+function Title({ children }: { children: ReactNode }) {
+  return <h2 className="mt-2 font-display text-[40px] leading-none text-ivory md:text-[52px]">{children}</h2>;
 }
 
 function Profile() {
   const p = system.profile;
   return (
     <div>
-      <Heading kicker="profile.egg / subject file" title="Egginaya." />
+      <Kicker>profile.egg</Kicker>
+      <Title>Egginaya.</Title>
 
-      <dl className="mt-12 divide-y divide-ice/10 border-y border-ice/10">
-        {p.rows.map(([k, v]) => (
-          <div key={k} className="grid gap-2 py-5 md:grid-cols-[170px_1fr] md:gap-8">
-            <dt className="font-mono text-[11px] uppercase tracking-[0.3em] text-ice/45">{k}</dt>
-            <dd className="font-display text-[19px] leading-[1.45] text-ivory/90 md:text-[21px]">{v}</dd>
-          </div>
+      <dl className="mt-8 space-y-4">
+        {p.rows.map(([k, v], i) => (
+          <motion.div
+            key={k}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15 + i * 0.05, ease: cine }}
+            className="grid grid-cols-1 gap-1 border-b border-ice/8 pb-4 md:grid-cols-[150px_1fr] md:gap-6"
+          >
+            <dt className="font-mono text-[11px] uppercase tracking-[0.2em] text-ice/45">{k}</dt>
+            <dd className="text-[15px] leading-[1.6] text-ivory/90">{v}</dd>
+          </motion.div>
         ))}
       </dl>
 
-      <Kicker className="mt-16">diagnostics</Kicker>
-      <ul className="mt-6 space-y-7">
-        {p.diagnostics.map((d) => (
-          <li key={d.key}>
-            <div className="flex items-baseline justify-between font-mono text-[12px]">
-              <span className="text-ivory/90">{d.key}</span>
-              <span className="text-ice/70">{d.value}</span>
+      <div className="mt-10">
+        <Kicker>diagnostics</Kicker>
+      </div>
+      <div className="mt-4 space-y-5">
+        {p.diagnostics.map((d, i) => {
+          const infinite = d.value === "∞";
+          return (
+            <div key={d.key}>
+              <div className="flex items-baseline justify-between font-mono text-[12px]">
+                <span className="text-ivory/85">{d.key}</span>
+                {/* The infinity glyph is tiny in the mono font, so it borrows the display face and is sized to match the other numbers. */}
+                <span
+                  className={cn(
+                    "text-ice",
+                    infinite && "font-display text-[24px] font-semibold leading-none [transform:translateY(3px)] md:text-[26px]"
+                  )}
+                  aria-label={infinite ? "infinite" : undefined}
+                >
+                  {d.value}
+                </span>
+              </div>
+              <div className="mt-2 h-[3px] w-full overflow-hidden rounded-full bg-ice/10">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(1.5, d.ratio * 100)}%` }}
+                  transition={{ duration: 1.4, delay: 0.3 + i * 0.12, ease: cine }}
+                  className={cn("h-full rounded-full", d.ratio === 0 ? "bg-gold/80" : "bg-blue shadow-[0_0_10px_rgba(47,107,255,0.7)]")}
+                />
+              </div>
+              {d.note && <p className="mt-1.5 text-[12.5px] italic text-ice/55">{d.note}</p>}
             </div>
-            <div className="mt-2 h-[3px] w-full overflow-hidden rounded-full bg-ice/10">
-              <motion.div
-                className="h-full rounded-full bg-blue shadow-[0_0_12px_rgba(47,107,255,0.8)]"
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.max(0, d.ratio) * 100}%` }}
-                transition={{ duration: 1.6, delay: 0.3, ease: cine }}
-              />
-            </div>
-            <p className="mt-2 font-display text-[16px] italic text-ivory/55">{d.note}</p>
-          </li>
-        ))}
-      </ul>
-
-      <p className="mt-14 font-mono text-[11px] uppercase tracking-[0.3em] text-ice/40">{p.footer}</p>
+          );
+        })}
+      </div>
+      <p className="mt-10 font-mono text-[11px] text-ice/40">{p.footer}</p>
     </div>
   );
 }
 
 function Incident() {
-  const inc = system.incident;
+  const s = system.incident;
   return (
     <div>
-      <Heading kicker={`incidents / ${inc.id}`} title={inc.title} />
+      <Kicker>incidents / {s.id}</Kicker>
+      <Title>{s.title}</Title>
 
-      <dl className="mt-10 grid gap-x-8 gap-y-4 font-mono text-[12px] md:grid-cols-2">
+      <dl className="mt-8 space-y-3">
         {[
-          ["type", inc.type],
-          ["severity", inc.severity],
-          ["status", inc.status],
+          ["type", s.type],
+          ["severity", s.severity],
+          ["status", s.status],
         ].map(([k, v]) => (
-          <div key={k} className="flex flex-col gap-1">
-            <dt className="text-[10.5px] uppercase tracking-[0.3em] text-ice/45">{k}</dt>
-            <dd className="text-ivory/85">{v}</dd>
+          <div key={k} className="grid grid-cols-1 gap-1 md:grid-cols-[150px_1fr] md:gap-6">
+            <dt className="font-mono text-[11px] uppercase tracking-[0.2em] text-ice/45">{k}</dt>
+            <dd className="text-[14.5px] text-ivory/90">{v}</dd>
           </div>
         ))}
       </dl>
 
-      <div className="mt-10 rounded-[6px] border border-ice/15 bg-deep/60 p-5 font-mono text-[12.5px] leading-[1.9] text-ice/85 md:p-6">
-        {inc.summary.map((l, i) => (
-          <p key={i}>
-            <span className="mr-3 text-ice/35">{String(i + 1).padStart(2, "0")}</span>
-            {l}
-          </p>
+      <div className="mt-8 space-y-2 rounded-[6px] border border-ice/10 bg-night/40 p-4 font-mono text-[12.5px] leading-[1.7] text-ivory/85">
+        {s.summary.map((l, i) => (
+          <motion.div
+            key={l}
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 + i * 0.25, ease: cine }}
+            className="flex gap-3"
+          >
+            <span className="text-blue">&gt;</span>
+            <span>{l}</span>
+          </motion.div>
         ))}
       </div>
 
-      <Kicker className="mt-12">notes</Kicker>
-      <ul className="mt-5 space-y-4">
-        {inc.notes.map((n) => (
-          <li key={n} className="flex gap-4 font-display text-[19px] leading-[1.5] text-ivory/85">
-            <span className="mt-[11px] h-[5px] w-[5px] shrink-0 rounded-full bg-blue" />
-            {n}
+      <div className="mt-8">
+        <Kicker>notes</Kicker>
+      </div>
+      <ul className="mt-3 space-y-2 text-[14.5px] leading-[1.65] text-ivory/85">
+        {s.notes.map((n) => (
+          <li key={n} className="flex gap-3">
+            <span className="mt-[9px] h-1 w-1 shrink-0 rounded-full bg-ice/50" />
+            <span>{n}</span>
           </li>
         ))}
       </ul>
 
-      <Kicker className="mt-14">evidence</Kicker>
-      <p className="mb-5 mt-3 font-display text-[18px] italic text-ivory/70">{inc.evidenceCaption}</p>
-      <Evidence src={media.mathsScreenshot} alt="The maths period message" missing={inc.evidenceMissing} />
+      <div className="mt-8">
+        <Kicker>evidence</Kicker>
+      </div>
+      <Evidence
+        src={media.mathsScreenshot}
+        alt="Screenshot of the message: maths mam borrowed my maths period"
+        caption={s.evidenceCaption}
+        missing={s.evidenceMissing}
+      />
     </div>
   );
 }
@@ -205,64 +280,75 @@ function Marriage() {
   const m = system.marriage;
   return (
     <div>
-      <Heading kicker="records / marriage.cert" title="Filed. Signed. Binding." />
-
-      <div className="relative mt-12 rounded-[4px] border border-gold/35 p-6 md:p-10">
-        <div className="pointer-events-none absolute inset-[6px] rounded-[2px] border border-gold/20" />
+      <Kicker>records / scanned document</Kicker>
+      <motion.div
+        initial={{ opacity: 0, y: 14, rotate: -0.6 }}
+        animate={{ opacity: 1, y: 0, rotate: 0 }}
+        transition={{ duration: 1, delay: 0.2, ease: cine }}
+        className="paper mt-4 rounded-[3px] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.5)] md:p-10"
+      >
         <div className="text-center">
-          <Kicker className="text-gold/70">certificate</Kicker>
-          <h3 className="mt-4 font-display text-[30px] leading-[1.05] tracking-[0.08em] text-ivory md:text-[40px]">{m.title}</h3>
-          <p className="mt-5 font-display text-[19px] italic text-ivory/75">
-            between {m.between[0]} and{" "}
-            <span className="whitespace-nowrap">{m.between[1]}</span>
-          </p>
+          <div className="font-mono text-[10px] uppercase tracking-[0.4em] text-night/50">certificate</div>
+          <h3 className="mt-2 font-display text-[30px] leading-[1.05] tracking-wide text-night md:text-[40px]">{m.title}</h3>
+          <div className="mx-auto mt-4 h-px w-24 bg-night/25" />
         </div>
 
-        <dl className="mt-10 divide-y divide-ice/10 border-y border-ice/10">
+        <p className="mt-6 text-center font-display text-[18px] italic text-night/80">
+          between <span className="font-semibold not-italic text-night">{m.between[0]}</span> and{" "}
+          <span className="font-semibold not-italic text-night">{m.between[1]}</span>
+        </p>
+
+        <dl className="mt-8 space-y-3">
           {m.fields.map(([k, v]) => (
-            <div key={k} className="grid gap-1 py-4 md:grid-cols-[160px_1fr] md:gap-6">
-              <dt className="font-mono text-[10.5px] uppercase tracking-[0.3em] text-ice/45">{k}</dt>
-              <dd className="font-display text-[18px] leading-[1.45] text-ivory/90">{v}</dd>
+            <div key={k} className="grid grid-cols-1 gap-0.5 border-b border-dotted border-night/20 pb-2 md:grid-cols-[140px_1fr] md:gap-6">
+              <dt className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-night/55">{k}</dt>
+              <dd className="text-[14.5px] text-night/90">{v}</dd>
             </div>
           ))}
         </dl>
 
-        <Kicker className="mt-12 text-gold/70">how it happened</Kicker>
-        <div className="mt-5 space-y-5 font-display text-[19px] leading-[1.6] text-ivory/88 md:text-[20px]">
+        <div className="mt-8 font-mono text-[10px] uppercase tracking-[0.32em] text-night/50">how it happened</div>
+        <div className="mt-3 space-y-3 text-[14.5px] leading-[1.7] text-night/85">
           {m.story.map((p) => (
             <p key={p}>{p}</p>
           ))}
         </div>
 
-        <Kicker className="mt-12 text-gold/70">terms &amp; conditions</Kicker>
-        <ol className="mt-5 space-y-4">
+        <div className="mt-8 font-mono text-[10px] uppercase tracking-[0.32em] text-night/50">terms &amp; conditions</div>
+        <ul className="mt-3 space-y-2 text-[14px] leading-[1.65] text-night/85">
           {m.terms.map((t, i) => (
-            <li key={t} className="grid grid-cols-[36px_1fr] gap-2 font-display text-[18px] leading-[1.5] text-ivory/85">
-              <span className="font-mono text-[11px] text-ice/40">{String(i + 1).padStart(2, "0")}</span>
+            <li key={t} className="flex gap-3">
+              <span className="font-mono text-[11px] text-night/45">{String(i + 1).padStart(2, "0")}</span>
               <span>{t}</span>
             </li>
           ))}
-        </ol>
+        </ul>
 
-        <div className="mt-14 grid grid-cols-2 gap-8">
-          <div className="text-center">
-            <p className="hand text-[34px] leading-none text-ivory">Abinaya</p>
-            <div className="mx-auto mt-3 h-px w-3/4 bg-ice/25" />
-            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.3em] text-ice/45">her</p>
+        <div className="mt-10 grid grid-cols-2 gap-8">
+          <div>
+            <div className="hand text-[30px] leading-none text-night/85">Abinaya</div>
+            <div className="mt-1 h-px bg-night/30" />
+            <div className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.25em] text-night/50">her</div>
           </div>
-          <div className="text-center">
-            <p className="hand text-[34px] leading-none text-ivory">{m.between[1]}</p>
-            <div className="mx-auto mt-3 h-px w-3/4 bg-ice/25" />
-            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.3em] text-ice/45">him</p>
+          <div>
+            <div className="hand text-[30px] leading-none text-night/85">{m.between[1]}</div>
+            <div className="mt-1 h-px bg-night/30" />
+            <div className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.25em] text-night/50">him</div>
           </div>
         </div>
 
-        <p className="mt-12 text-center font-display text-[15px] italic text-ivory/55">{m.footnote}</p>
-      </div>
+        <p className="mt-8 text-[12px] italic leading-[1.6] text-night/55">{m.footnote}</p>
+      </motion.div>
 
-      <Kicker className="mt-14">attachment / the signed agreement</Kicker>
-      <p className="mb-5 mt-3 font-display text-[18px] italic text-ivory/70">{m.evidenceCaption}</p>
-      <Evidence src={media.marriageScreenshot} alt="The signed Instagram Marriage Association message" missing={m.evidenceMissing} />
+      <div className="mt-10">
+        <Kicker>attachment / the signed agreement</Kicker>
+      </div>
+      <Evidence
+        src={media.marriageScreenshot}
+        alt="Screenshot of the signed Instagram Marriage Association agreement"
+        caption={m.evidenceCaption}
+        missing={m.evidenceMissing}
+      />
     </div>
   );
 }
@@ -270,37 +356,41 @@ function Marriage() {
 function MediaFiles() {
   return (
     <div>
-      <Heading kicker="media / read only" title={system.mediaHeading} />
-      <ul className="mt-12 divide-y divide-ice/10 border-t border-ice/10">
-        {system.mediaFiles.map((f) => (
-          <li key={f.name} className="py-7">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-              <p className="font-mono text-[13px]">
-                <span className="text-ice/40">media/</span>
-                <span className="text-ivory">{f.name}</span>
-              </p>
-              <p className="font-mono text-[11.5px] text-ice/45">{f.meta}</p>
+      <Kicker>media / read only</Kicker>
+      <Title>{system.mediaHeading}</Title>
+      <ul className="mt-8 divide-y divide-ice/8">
+        {system.mediaFiles.map((f, i) => (
+          <motion.li
+            key={f.name}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15 + i * 0.07, ease: cine }}
+            className="group py-5"
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 font-mono text-[12.5px]">
+              <span className="text-ivory transition-colors duration-300 group-hover:text-ice">
+                <span className="text-ice/35">media/</span>
+                {f.name}
+              </span>
+              <span className="text-[11px] text-ice/45">{f.meta}</span>
             </div>
-            <p className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.3em] text-blue">{f.tag}</p>
-            <p className="mt-4 max-w-[700px] font-display text-[20px] italic leading-[1.5] text-ivory/90 md:text-[21px]">{f.note}</p>
-          </li>
+            <div className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.28em] text-blue/80">{f.tag}</div>
+            <p className="mt-2 max-w-[560px] font-display text-[17.5px] italic leading-[1.45] text-ivory/85 md:text-[19px]">{f.note}</p>
+          </motion.li>
         ))}
       </ul>
-      <p className="mt-10 font-mono text-[11px] uppercase tracking-[0.3em] text-ice/40">{system.mediaFooter}</p>
+      <p className="mt-8 font-mono text-[11px] text-ice/40">{system.mediaFooter}</p>
     </div>
   );
 }
 
 function Locked({ onGo }: { onGo: () => void }) {
   return (
-    <div className="flex min-h-[60vh] flex-col items-start justify-center">
-      <Kicker className="text-gold/70">encrypted</Kicker>
-      <p className="mt-4 font-mono text-[16px] text-ivory">
-        <span className="text-ice/40">~/</span>
-        {system.lockedFile.name}
-      </p>
-      <p className="mt-8 max-w-[520px] font-display text-[30px] italic leading-[1.25] text-ivory/90 md:text-[38px]">{system.lockedFile.line}</p>
-      <QuietButton className="mt-10" onClick={onGo}>
+    <div className="flex min-h-[380px] flex-col items-start justify-center">
+      <Kicker>encrypted</Kicker>
+      <div className="mt-2 font-mono text-[18px] tracking-[0.06em] text-gold/90">{system.lockedFile.name}</div>
+      <p className="mt-6 max-w-[440px] font-display text-[26px] italic leading-[1.3] text-ivory/90 md:text-[30px]">{system.lockedFile.line}</p>
+      <QuietButton onClick={onGo} className="mt-8">
         {system.lockedFile.button}
       </QuietButton>
     </div>

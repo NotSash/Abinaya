@@ -70,16 +70,19 @@ export function WindowNight({ onBack }: { onBack: () => void }) {
             <Kicker className="text-ice/70">{facts.togetherDate.month}</Kicker>
           </motion.div>
 
-          {/* The day. Given its full line height so the tail of the "5" never reaches the year below. */}
+          {/*
+            The day. Cormorant's old-style "5" has a long tail that drops below the baseline,
+            so the numeral is asked for lining figures and given room underneath, and the
+            year is kept well clear of it.
+          */}
           <motion.p
             {...reveal(0.6)}
-            className="mt-2 font-display text-[150px] leading-[1] text-ivory [text-shadow:0_0_50px_rgba(217,230,255,0.35)] md:text-[210px]"
+            className="mt-2 font-display text-[150px] leading-[1.15] text-ivory [font-variant-numeric:lining-nums] [text-shadow:0_0_50px_rgba(217,230,255,0.35)] md:text-[210px]"
           >
             {facts.togetherDate.day}
           </motion.p>
 
-          {/* The year: bigger, brighter and clear of the numerals above. */}
-          <motion.p {...reveal(0.9)} className="mt-1 font-mono text-[15px] tracking-[0.5em] text-ice">
+          <motion.p {...reveal(0.9)} className="mt-4 font-mono text-[15px] tracking-[0.5em] text-ice">
             {facts.togetherDate.year}
           </motion.p>
 

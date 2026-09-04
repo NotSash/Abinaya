@@ -102,8 +102,8 @@ export default function App() {
                 {copy.arrival.sub}
               </motion.p>
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: reduce ? 0 : 1.2, delay: 2.8, ease: cine }}
                 className="mt-12"
               >

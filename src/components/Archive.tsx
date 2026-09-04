@@ -40,10 +40,15 @@ export function Archive({ onBack }: { onBack: () => void }) {
       <div className="grain" />
 
       <BackToRoom onClick={onBack} />
-      <div className="pointer-events-none absolute right-6 top-6 z-30 text-right md:right-8 md:top-8">
+      <motion.div
+        initial={{ opacity: 0, x: 8 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 1, delay: 0.5, ease: cine }}
+        className="pointer-events-none absolute right-6 top-6 z-30 text-right md:right-8 md:top-8"
+      >
         <Kicker>{archive.kicker}</Kicker>
         <p className="mt-2 font-display text-[16px] italic text-ivory/60">{touch ? archive.hintTouch : archive.hint}</p>
-      </div>
+      </motion.div>
 
       {/* prints on the desk */}
       {stacked ? (
@@ -79,12 +84,12 @@ export function Archive({ onBack }: { onBack: () => void }) {
         </div>
       )}
 
-      {/* picked up */}
+      {/* picked up. Clicking anywhere (the picture included) puts it back. */}
       <AnimatePresence>
         {current && (
           <motion.div
             key="lift"
-            className="absolute inset-0 z-50 flex flex-col items-center justify-center px-5"
+            className="absolute inset-0 z-50 flex cursor-pointer flex-col items-center justify-center px-5"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, transition: { duration: 0.4 } }}
@@ -98,7 +103,6 @@ export function Archive({ onBack }: { onBack: () => void }) {
               animate={{ scale: 1, y: 0, rotate: 0 }}
               exit={{ scale: 0.92, y: 20, opacity: 0, transition: { duration: 0.4 } }}
               transition={{ duration: 0.9, ease: cine }}
-              onClick={(e) => e.stopPropagation()}
             >
               <PrintCard
                 print={current}
@@ -118,13 +122,17 @@ export function Archive({ onBack }: { onBack: () => void }) {
                 </motion.div>
               )}
             </motion.div>
-            <button
-              type="button"
-              onClick={() => setPicked(null)}
-              className="absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 font-mono text-[10.5px] uppercase tracking-[0.35em] text-ice/60 hover:text-ice"
+
+            {/* a quiet note in the corner, not a button: anywhere works */}
+            <motion.p
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.9, delay: 0.8, ease: cine }}
+              className="pointer-events-none absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-6 font-mono text-[10.5px] uppercase tracking-[0.35em] text-ice/60 md:right-8"
             >
-              {archive.putBack}
-            </button>
+              {touch ? archive.putBackTouch : archive.putBack}
+            </motion.p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -212,7 +220,7 @@ function PrintCard({
         "polaroid relative block w-full rounded-[2px] text-left shadow-[0_18px_50px_rgba(0,0,0,0.5),0_2px_6px_rgba(0,0,0,0.35)] transition-transform duration-500",
         onPick && "hover:-translate-y-1.5 hover:rotate-[0.6deg]",
         hidden && "opacity-0",
-        big && "max-w-full cursor-default"
+        big && "max-w-full"
       )}
     >
       {!big && <span className={cn("pushpin", print.pin === "red" && "pushpin-red", print.pin === "gold" && "pushpin-gold")} />}

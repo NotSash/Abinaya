@@ -1,54 +1,35 @@
-# Filling in the last bits
+# Content guide
 
-All the words are done. Everything personal lives in one file: `src/content/egginaya.ts`.
-The only things left are **files you drop in** — no code changes needed, they're picked up automatically by name.
+Everything personal lives in `src/content/egginaya.ts`. Components only read from it.
 
-> First time on a new machine: run `npm install` once, then `npm run dev`.
-> Until that's done VS Code will complain about `vite/client`, `import.meta.glob` and `node` types — they all come from `node_modules`.
+## Files you drop in (no code changes needed)
 
-## 1. Photos → `src/assets/photos/`
-
-| file | shows as | who |
-| --- | --- | --- |
-| `01.jpg` | "Our 1st pic together!!!" | both of you |
-| `02.jpg` | "Pretty little babyyyyy" | her |
-| `03.jpg` | "Sleepyheaddddd -_-" | her |
-| `04.jpg` | "Shawwtyyyyy" | her |
-| `05.jpg` + `05.mp4` | "Baddyyyyyyy" (Live Photo) | her |
-
-`.jpg`, `.jpeg`, `.png` or `.webp` all work. **HEIC does not work in browsers** — export as JPG.
-**Any size or shape works.** Each frame on the pinboard measures its picture when it loads and shapes itself to fit — portrait, landscape or square. Until a file is there, the frame shows a "photo goes here" slot.
-
-### The Live Photo (05)
-A Live Photo is really two files: a still + a ~3 second video. The site needs both:
-
-1. On your iPhone, open the Live Photo → Share → **Save as Video**. That gives you a `.MOV` in your camera roll.
-2. Also export the still: Share → Options → turn **Live Photo off** → save/AirDrop as JPG.
-3. Rename them `05.mp4` and `05.jpg` and put both in `src/assets/photos/`.
-   - If you only have a `.mov`, rename it `05.mov` — it works on iPhone/Safari. For Chrome/Android too, convert to `.mp4` (iMovie, HandBrake, or any online converter — keep H.264).
-4. Done. On the pinboard it shows a little **LIVE** badge; it plays when she hovers (desktop) or picks it up (phone), muted and looping, exactly like a Live Photo.
-
-## 2. Screenshots → `src/assets/photos/`
-
-| file | where it appears |
+| File | Where it shows up |
 | --- | --- |
-| `maths-period.png` | the laptop → `incidents/maths_period.log` → evidence |
-| `marriage.png` | the laptop → `records/marriage.cert` → "the signed agreement" |
+| `src/assets/photos/01.jpg` | pinboard, "Our 1st pic together!!!" |
+| `src/assets/photos/02.jpg` | pinboard, "Pretty little babyyyyy" |
+| `src/assets/photos/03.jpg` | pinboard, "Sleepyheaddddd -_-" |
+| `src/assets/photos/04.jpg` | pinboard, "Shawwtyyyyy" (the text where she admits you're taller) |
+| `src/assets/photos/05.jpg` | pinboard, "Baddyyyyyyy" (still frame of the Live Photo) |
+| `src/assets/photos/05.mp4` | the moving part of the Live Photo |
+| `src/assets/photos/maths-period.png` | laptop > incidents/maths_period.log |
+| `src/assets/photos/marriage.png` | laptop > records/marriage.cert |
+| `src/assets/audio/until-i-found-you.mp3` | optional. If present it is used instead of Spotify |
 
-## 3. The song
+- Any image extension works (`.jpg`, `.jpeg`, `.png`, `.webp`). HEIC is not supported by browsers, export to jpg.
+- Photos can be any size or shape. The frames measure each picture when it loads and shape themselves
+  around it, so there is never any empty space beside a picture.
 
-By default the letter uses the **Spotify player** (Stephen Sanchez – *Until I Found You*, original) and presses play by itself the moment the final part of the letter scrolls into view.
-Spotify only plays the full track if she's logged in to Spotify in that browser; otherwise it plays the preview.
+## The room
 
-If you ever get the mp3, drop it at `src/assets/audio/until-i-found-you.mp3` and it'll be used instead of Spotify (full song, from the start, autoplaying — no login needed).
+The room, desk and sky renders are loaded from the repository (see `src/lib/assets.ts`).
+Hotspot positions are percentages of the room image itself, so they stay on the laptop,
+the pinboard, the window, the envelope, the egg and the lunch box at any window size.
 
-## 4. Scene renders
+## How it plays
 
-`src/lib/assets.ts` loads `room.jpg`, `desk.jpg`, `sky.jpg` from the repo's first commit on GitHub (they were removed from `main`).
-To make the build self-contained, copy those three files into `src/assets/` and switch the constants to imports.
-
-## 5. Progress
-
-Nothing is saved between visits: a refresh always starts at the door, and the room is fresh.
-The counter at the top right counts **five** finds — the laptop, the pinboard, the window, the lunch box and the egg (poke it once).
-The envelope only opens after all five.
+1. Arrival: "come in".
+2. The room. Move the mouse (or drag on a phone) to look around. Five things glow.
+3. Each one opens a scene: the laptop, the pinboard, the window, the lunch box, the egg.
+4. The blue envelope stays sealed until all five have been found. Then it turns gold.
+5. Inside: the letter, the final message, and the song.
